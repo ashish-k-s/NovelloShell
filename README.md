@@ -12,7 +12,7 @@ You can configure this tool to use any of your OpenStack deployment to have Rave
 - Use novelloshell.sh script as shell for any user account.
 */etc/passwd* file entry should look like below:
 ```
-novello:x:5010:5010::/home/ashishks:/mnt/novello/TESTING/novelloshell-v3.sh
+ashishks:x:5010:5010::/home/ashishks:/mnt/novello/TESTING/novelloshell-v3.sh
 ```
 
 - Configure .novelloshell.cfg file:
