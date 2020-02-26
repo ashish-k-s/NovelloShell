@@ -15,10 +15,10 @@
 
 # Report Bugs: ashish.k.shah@gmail.com
 
-CONFIGFILE=".novelloshell.conf"
+CONFIGFILE="/export/novello/TESTING/.novelloshell.cfg"
 
 if [ ! -f "$CONFIGFILE" ]
-then
+then 
 echo -e "ERROR: $CONFIGFILE does not exist"
 exit 1
 fi
@@ -44,6 +44,16 @@ echo $TAG
 echo $ADMINUSERSFILE
 
 USERNAME=$(whoami)
+
+# Set the ADMINUSER flag if the user has administrative rights
+grep $USERNAME $ADMINUSERSFILE
+if [ $? -eq 0 ]
+then
+ADMINUSER=1
+else 
+ADMINUSER=0
+fi
+
 cd $BPSDIR
 
 bold=`tput bold`
@@ -52,15 +62,20 @@ normal=`tput sgr0`
 function PrintMenuOptions1
 {
 	clear
-	echo -ne "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
+	echo -e "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
 \t=================================================================================\n
 ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
 new - Launch a new lab from blueprint
-list - List launched labs
-DELETE - Delete the lab environment blueprint
-exit - Exit from NovelloShell
+list - List launched labs"
+
+if [ $ADMINUSER -eq 1 ]
+then
+echo -e "DELETE - Delete the lab environment blueprint"
+fi
+
+echo -ne "exit - Exit from NovelloShell
 
 Enter your choice: " 
 }
@@ -68,7 +83,7 @@ Enter your choice: "
 function PrintMenuOptions2
 {
 	clear
-	echo -ne "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
+	echo -e "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
 \t=================================================================================\n
 ${bold}User:\t $USERNAME ${normal}
 ${bold}Lab environment:\t $lab ${normal}
@@ -83,13 +98,18 @@ stop - Stop a lab
 delete - Delete a lab
 
 shell - Shell for a lab
+"
 
-SAVE - Save the application as blueprint
+if [ $ADMINUSER -eq 1 ]
+then
+echo -e "SAVE - Save the application as blueprint
 EDIT - Edit the stack template of application 
        (need to run "UPDATE" for the changes to take effect)
 UPDATE - Update lab environment with current heat template
+"
+fi
 
-back - Go back to previous menu
+echo -ne "back - Go back to previous menu
 exit - Exit from NovelloShell
 
 Enter your choice: " 
@@ -106,7 +126,14 @@ case "$choice" in
 		ListLabs
 		;;
 	'DELETE')
+		if [ $ADMINUSER -eq 1 ]
+		then
 		LabBlueprintDELETE
+		else 
+		echo -e "Administrative rights required for this function\nHit enter to continue"
+		read p
+		DisplayScreen1
+		fi
 		;;
 	'exit')
 		ExitNovelloShell
@@ -139,16 +166,37 @@ case "$choice" in
 		ShowConsole
 		;;
 	'UPDATE')
+                if [ $ADMINUSER -eq 1 ]
+                then
 		LabUPDATE
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+		DisplayScreen2
+                fi
 		;;
 	'shell')
 		LabShell
 		;;
 	'SAVE')
+                if [ $ADMINUSER -eq 1 ]
+                then
 		LabSAVE
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+		DisplayScreen2
+                fi
 		;;
 	'EDIT')
+                if [ $ADMINUSER -eq 1 ]
+                then
 		LabEDIT
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+		DisplayScreen2
+                fi
 		;;
 	'back')
 		DisplayScreen1
