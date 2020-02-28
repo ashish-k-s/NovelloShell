@@ -29,19 +29,14 @@ APPSDIR=$(grep APPSDIR $CONFIGFILE)
 BPSDIR=$(grep BPSDIR $CONFIGFILE)
 TAG=$(grep TAG $CONFIGFILE)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE)
+IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
 eval $PUBLICNETWORK
 eval $ADMINRC
 eval $APPSDIR
 eval $BPSDIR
 eval $TAG
 eval $ADMINUSERSFILE
-
-echo $PUBLICNETWORK
-echo $ADMINRC
-echo $APPSDIR
-echo $BPSDIR
-echo $TAG
-echo $ADMINUSERSFILE
+eval $IMAGEFILESPATH
 
 USERNAME=$(whoami)
 
@@ -73,6 +68,7 @@ list - List launched labs"
 if [ $ADMINUSER -eq 1 ]
 then
 echo -e "DELETE - Delete the lab environment blueprint"
+echo -e "IMAGE - Upload images to Novello cluster"
 fi
 
 echo -ne "exit - Exit from NovelloShell
@@ -135,6 +131,16 @@ case "$choice" in
 		DisplayScreen1
 		fi
 		;;
+        'IMAGE')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                UploadIMAGE
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
 	'exit')
 		ExitNovelloShell
 		;;
@@ -461,6 +467,93 @@ fi
 DisplayScreen2
 }
 
+
+function SelectImage
+{
+        echo -e "===^===^===^===^===^===^===^===^===^===^===^===^==="
+        echo -e "Select the name of the images from above list"
+        echo -e "Multiple images can be selected by seperating them with space"
+        echo -e "Enter '<' to go back to previous menu or 'x' to exit"
+        bind 'set mark-directories off' > /dev/null 2>&1
+        choice=""
+        count=0
+        while [[ $choice = "" ]]
+        do
+                read -ea choice
+                count=$(( count + 1))
+                if [ $count -eq 5 ]
+                then
+                        choice='<'
+                fi
+        done
+	ImageArrayReq=("${choice[@]}")
+        if [[ $choice == '<' ]]
+        then
+                DisplayScreen1
+        fi
+        if [[ $choice == 'x' ]]
+        then
+                ExitNovelloShell
+        fi
+        return
+}
+
+
+function GetImageNameTypeFromFile
+{
+extn=$(echo $ImageFile | rev | cut -d '.' -f 1 | rev)
+ImageName=$(echo $ImageFile | rev | cut -d '.' -f 2- | rev)
+###echo -e "ImageName: $ImageName"
+###echo -e "extn: $extn"
+if [[ $extn == "img" || $extn == "raw" ]]
+then
+	ImageType="raw"
+else 
+	ImageType=$extn
+fi
+}
+
+function UploadIMAGE
+{
+        clear
+        echo -e "Upload the Image(s) in lab environment"
+        echo -e "======================================"
+	cd $IMAGEFILESPATH
+        ls
+        SelectImage
+	SetAdminCredentials
+	echo -ne "\nGettng list of available images . . . "
+	ImageArrayAvail=($(openstack image list -c Name -f value))
+	echo -e "done"
+	###echo -e ${ImageArrayReq[@]}
+	###echo -e ${ImageArrayReq[0]}
+	for ImageFile in "${ImageArrayReq[@]}"
+	do
+		###echo $ImageFile
+		###read p
+		if [[ ! -f $ImageFile ]]
+		then
+			echo -e "$ImageFile does not exist, skipping..."
+			continue
+		fi
+		GetImageNameTypeFromFile
+		if [[ $ImageType != "raw" && $ImageType != "qcow2" && $ImageType != "iso" ]]
+		then
+			echo -e "Skipping $ImageFile of invalid image type: $ImageType"
+			continue
+		fi
+		if [[ " ${ImageArrayAvail[@]} " =~ " ${ImageName} " ]]
+		then
+			echo -e "Image $ImageName already exists, skipping $ImageFile . . . "
+		else 
+			echo -ne "Image $ImageName does not exist, creating image . . . "
+			openstack image create --disk-format $ImageType --container-format bare --public --file $ImageFile $ImageName
+			echo -e "done"
+
+		fi
+	done
+}
+
 function SelectLab
 {
 	echo -e "===^===^===^===^===^===^===^===^===^===^===^===^==="
@@ -489,7 +582,6 @@ function SelectLab
 	fi
 	return
 }
-
 
 function LabBlueprintDELETE
 {
