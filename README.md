@@ -7,6 +7,28 @@ Quick and dirty substitute of Ravello.
 This tool provides quick and dirty substitute of Ravello for use with OpenStack infrastructure.
 You can configure this tool to use any of your OpenStack deployment to have Ravello like features using it.
 
+## Features
+
+- Launch a new lab from blueprint
+- Delete the lab environment blueprint
+- Upload images to Novello/OSP environment
+- Execute below functions on running labs:
+  - Show status of running lab
+  - Show console access details of the lab
+  - Start the lab in stopped state
+  - Stop the running lab
+  - Delete the lab
+  - Get access to openstack shell for a lab 
+    - Restricted access for that specific lab
+    - Allows users to run additional openstack commands on the stack specific to that lab environment only
+
+  - Edit the stack template of the application(lab)
+  - Update the lab environment with modified heat template
+  - Save the running application(lab) as new blueprint
+- Multi user support with access restriction to owner's labs
+- Features like save as blueprint, delete blueprint, upload image, can be restricted to few users with admin rights
+
+
 ## How to configure
 
 - Use novelloshell.sh script as shell for any user account.
