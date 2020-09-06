@@ -15,7 +15,7 @@
 
 # Report Bugs: ashish.k.shah@gmail.com
 
-CONFIGFILE="/export/novello/TESTING/.novelloshell.cfg"
+CONFIGFILE=".novelloshell.cfg"
 
 if [ ! -f "$CONFIGFILE" ]
 then 
