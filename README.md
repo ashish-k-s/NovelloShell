@@ -66,6 +66,16 @@ ADMINUSERSFILE="/mnt/novello/TESTING/novelloshell-admins"
 # Make sure to include this string in the name of common images so as to avoid duplicate image creation and deletion.
 # Common images can be stored only once and can be shared by different blueprints to save the space.
 SKIPIMAGETAG="myteamcommon"
+
+# Path of directory where image files are stored 
+# This path is looked for upload of image in OpenStack 
+IMAGEFILESPATH="/home/ashishks/novello/TESTING/PROJECTS/IMAGES"
+
+# New option introduced in v4
+# This is to be used with an OSP setup where script dues not have full admin rights
+# NovelloShell will not manage creation of projects per lab in this case.
+ADMINACCESS="no"
+
 ```
 
 ## How to use this tool

@@ -30,6 +30,7 @@ BPSDIR=$(grep BPSDIR $CONFIGFILE)
 TAG=$(grep TAG $CONFIGFILE)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE)
 IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
+ADMINACCESS=$(grep ADMINACCESS $CONFIGFILE)
 eval $PUBLICNETWORK
 eval $ADMINRC
 eval $APPSDIR
@@ -37,6 +38,8 @@ eval $BPSDIR
 eval $TAG
 eval $ADMINUSERSFILE
 eval $IMAGEFILESPATH
+typeset -l ADMINACCESS
+eval $ADMINACCESS
 
 USERNAME=$(whoami)
 
@@ -398,10 +401,13 @@ function DisplayScreen2
 
 function SetUserCredentialsFor
 {
+	if [ $ADMINACCESS != "no" ]
+	then
 	lab=$1
         export OS_USERNAME=$lab
         export OS_PASSWORD=redhat
         export OS_PROJECT_NAME=$lab
+	fi
 }
 
 function SetAdminCredentials
@@ -439,6 +445,9 @@ function LaunchLabStack
 	cp $cpsrc $cpdst
 	stackfile="${APPSDIR}/${lab}/stack_user.yaml"
 	echo -e "Stack name:  $lab"
+
+	if [ $ADMINACCESS != "no" ]
+	then
 	openstack project create $lab > /dev/null 2>&1
 	openstack user create --password redhat --project $lab $lab > /dev/null 2>&1
 	openstack role add --project $lab --user $lab _member_ > /dev/null 2>&1
@@ -446,7 +455,8 @@ function LaunchLabStack
 	openstack quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
 
 	SetUserCredentialsFor $lab
-	
+	fi
+
 	openstack stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=xxx
 	return
 }
@@ -682,8 +692,11 @@ openstack stack delete $lab --wait --yes
 if [ $? -eq 0 ]
 then
 	SetAdminCredentials
+	if [ $ADMINACCESS != "no" ]
+	then
 	openstack project delete $lab
 	openstack user delete $lab
+	fi
 	echo -e "\nSuccessfully deleted the lab environment"
 	echo -ne "Deleating associated files..."
 	rm -rf "${APPSDIR}/${lab}"
