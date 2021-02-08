@@ -244,7 +244,7 @@ function StopLab
 {
         SetUserCredentialsFor $lab
         echo -e "Suspending  $lab"
-	openstack $SUFFIX stack suspend $lab
+	openstack $CLISUFFIX stack suspend $lab
 	echo -e "All the VMs of $lab will be suspended in some time"
 	PauseDisplayScreen2
 }
@@ -253,7 +253,7 @@ function StartLab
 {
         SetUserCredentialsFor $lab
         echo -e "Starting  $lab"
-	openstack $SUFFIX stack resume $lab
+	openstack $CLISUFFIX stack resume $lab
 	echo -e "All the VMs of $lab will be resumed in some time"
 	PauseDisplayScreen2
 }
@@ -262,7 +262,7 @@ function StatusLab
 {
 	SetUserCredentialsFor $lab
 	echo -e "Probing status of $lab"
-	openstack $SUFFIX server list
+	openstack $CLISUFFIX server list
 	PauseDisplayScreen2
 }
 
@@ -293,21 +293,21 @@ function LabSAVE
 	echo -e "Stopping all the servers in this lab..."
 	# TODO: Do not stop the server which is already in stopped state
 	# TODO: Check if stopping the server is really needed
-	for i in `openstack $SUFFIX server list -c Name -f value`
+	for i in `openstack $CLISUFFIX server list -c Name -f value`
 	do
-		openstack $SUFFIX server stop $i
+		openstack $CLISUFFIX server stop $i
 	done
 
 	echo -ne "Waiting for all the server to stop. "
-	while [ -n "$(openstack $SUFFIX server list -c Name -c Status -f value | grep -v SHUTOFF)" ]
+	while [ -n "$(openstack $CLISUFFIX server list -c Name -c Status -f value | grep -v SHUTOFF)" ]
 	do
 		echo -n " . "
 		#sleep 5
 	done
 	echo -e " "
-	openstack $SUFFIX server list -c Name -c Status -f value
+	openstack $CLISUFFIX server list -c Name -c Status -f value
 
-	OLDLAB=$(openstack $SUFFIX stack list -c 'Stack Name' -f value)
+	OLDLAB=$(openstack $CLISUFFIX stack list -c 'Stack Name' -f value)
 	OLDLAB=$(echo $OLDLAB | cut -d '-' -f 2- | rev | cut -d '_' -f 2- | rev)
 	echo -e "Cloaning current status of $lab to $NEWLAB"
 
@@ -315,7 +315,7 @@ function LabSAVE
 	newstackfile="${BPSDIR}/${NEWLAB}/stack_user.yaml"
 	OLDIFS=$(echo $IFS)
 	IFS=$'\n'
-	for i in $(openstack $SUFFIX server list -c Name -c Image -f value)
+	for i in $(openstack $CLISUFFIX server list -c Name -c Image -f value)
 	do
 		echo $i
 		servername=$(echo $i | awk '{print $1}')
@@ -331,7 +331,7 @@ function LabSAVE
 	        fi
 
 		echo -e "Creating new image: $newimgname"
-		openstack $SUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
+		openstack $CLISUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
 		sed -i "s/$curimgname/$newimgname/g" $newstackfile
 	done
 
@@ -354,7 +354,7 @@ function LabSAVE
                 fi
 
 		echo -e "Setting $image as public image"
-		openstack $SUFFIX image set --property visibility=public $image 
+		openstack $CLISUFFIX image set --property visibility=public $image 
 	done
 
 	SetUserCredentialsFor $lab
@@ -367,7 +367,7 @@ function LabUPDATE
         SetUserCredentialsFor $lab
         echo -e "Updating lab environment $lab"
 	labdir="${APPSDIR}/${lab}"
-        openstack $SUFFIX stack update -t $labdir/stack_user.yaml $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=xxx
+        openstack $CLISUFFIX stack update -t $labdir/stack_user.yaml $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=xxx
 	PauseDisplayScreen2
 }
 
@@ -375,10 +375,10 @@ function ShowConsole
 {
         SetUserCredentialsFor $lab
         echo -e "Probing console access details for $lab\n"
-	for vm in `openstack $SUFFIX server list -c Name -f value`
+	for vm in `openstack $CLISUFFIX server list -c Name -f value`
 	do
 		echo -ne "$vm \t"
-		openstack $SUFFIX console url show $vm -c url -f value
+		openstack $CLISUFFIX console url show $vm -c url -f value
 		echo -e "\n"
 	done
 	PauseDisplayScreen2
@@ -424,10 +424,10 @@ function LaunchLabStack
 	SetAdminCredentials
 	appendno=0
 	count=1
-        runninglabs=$(openstack $SUFFIX stack list | grep $lab | wc -l)
+        runninglabs=$(openstack $CLISUFFIX stack list | grep $lab | wc -l)
         if [ $runninglabs -gt 0 ]
         then
-		runninglabnos=$(openstack $SUFFIX stack list -c 'Stack Name' | grep $lab | tr -d '|' | tr -d '[:blank:]' | rev | cut -d '_' -f 1)
+		runninglabnos=$(openstack $CLISUFFIX stack list -c 'Stack Name' | grep $lab | tr -d '|' | tr -d '[:blank:]' | rev | cut -d '_' -f 1)
 		while [ $appendno -eq 0 ]
 		do
 			if [[ $runninglabnos == *$count* ]]
@@ -451,16 +451,16 @@ function LaunchLabStack
 
 	if [ $ADMINACCESS != "no" ]
 	then
-	openstack $SUFFIX project create $lab > /dev/null 2>&1
-	openstack $SUFFIX user create --password redhat --project $lab $lab > /dev/null 2>&1
-	openstack $SUFFIX role add --project $lab --user $lab _member_ > /dev/null 2>&1
-	openstack $SUFFIX role add --project $lab --user admin admin > /dev/null 2>&1
-	openstack $SUFFIX quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
+	openstack $CLISUFFIX project create $lab > /dev/null 2>&1
+	openstack $CLISUFFIX user create --password redhat --project $lab $lab > /dev/null 2>&1
+	openstack $CLISUFFIX role add --project $lab --user $lab _member_ > /dev/null 2>&1
+	openstack $CLISUFFIX role add --project $lab --user admin admin > /dev/null 2>&1
+	openstack $CLISUFFIX quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
 
 	SetUserCredentialsFor $lab
 	fi
 
-	openstack $SUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=xxx
+	openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=xxx
 	return
 }
 
@@ -468,10 +468,10 @@ function ListLabs
 {
 echo -e "Checking list of your labs.."
 SetAdminCredentials
-openstack $SUFFIX stack list -c 'Stack Name' -c 'Stack Status' -c 'Creation Time' | grep $USERNAME
+openstack $CLISUFFIX stack list -c 'Stack Name' -c 'Stack Status' -c 'Creation Time' | grep $USERNAME
 SelectLab
 echo -e "checking presence of $lab"
-openstack $SUFFIX stack list -c 'Stack Name' | tr -d '|' | tr -d '[:blank:]' | grep ^$lab$
+openstack $CLISUFFIX stack list -c 'Stack Name' | tr -d '|' | tr -d '[:blank:]' | grep ^$lab$
 if [ $? -ne 0 ]
 then
 	echo -e "Invalid lab"
@@ -536,7 +536,7 @@ function UploadIMAGE
         SelectImage
 	SetAdminCredentials
 	echo -ne "\nGettng list of available images . . . "
-	ImageArrayAvail=($(openstack $SUFFIX image list -c Name -f value))
+	ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
 	echo -e "done"
 	###echo -e ${ImageArrayReq[@]}
 	###echo -e ${ImageArrayReq[0]}
@@ -560,7 +560,7 @@ function UploadIMAGE
 			echo -e "Image $ImageName already exists, skipping $ImageFile . . . "
 		else 
 			echo -ne "Image $ImageName does not exist, creating image . . . "
-			openstack $SUFFIX image create --disk-format $ImageType --container-format bare --public --file $ImageFile $ImageName
+			openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --public --file $ImageFile $ImageName
 			echo -e "done"
 
 		fi
@@ -648,7 +648,7 @@ do
 	fi
         echo -e "Deleting image $image"
 	
-        openstack $SUFFIX image delete $image
+        openstack $CLISUFFIX image delete $image
 done
 echo -e "Deleting heat template for $choice"
 cmd="rm -rf $BPSDIR/$choice"
@@ -691,14 +691,14 @@ fi
 
 echo -e "Deleting $lab"
 SetUserCredentialsFor $lab
-openstack $SUFFIX stack delete $lab --wait --yes
+openstack $CLISUFFIX stack delete $lab --wait --yes
 if [ $? -eq 0 ]
 then
 	SetAdminCredentials
 	if [ $ADMINACCESS != "no" ]
 	then
-	openstack $SUFFIX project delete $lab
-	openstack $SUFFIX user delete $lab
+	openstack $CLISUFFIX project delete $lab
+	openstack $CLISUFFIX user delete $lab
 	fi
 	echo -e "\nSuccessfully deleted the lab environment"
 	echo -ne "Deleating associated files..."
