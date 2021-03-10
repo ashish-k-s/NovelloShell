@@ -99,6 +99,8 @@ start - Start a lab
 stop - Stop a lab
 delete - Delete a lab
 
+toggle - Toggle boot sequence for a VM
+
 shell - Shell for a lab
 "
 
@@ -177,6 +179,9 @@ case "$choice" in
 	'console')
 		ShowConsole
 		;;
+       'toggle')
+               ToggleBoot
+               ;;		
 	'UPDATE')
                 if [ $ADMINUSER -eq 1 ]
                 then
@@ -384,6 +389,61 @@ function ShowConsole
 	PauseDisplayScreen2
 }
 
+function ToggleBoot
+{
+	SetUserCredentialsFor $lab
+	echo -e "Listing vms of this lab, please wait..."
+	vms=($(openstack server list -f value))
+	printf '%s\n' "${vms[@]}"
+	read -p "Select the VM to toggle boot: " vmname
+	if [[ " ${vms[@]} " =~ " ${vmname} " ]]
+	then
+		echo -ne "VM exists ... "
+		eval `openstack server show $vmname -f shell | grep os_ext_sts`
+		if [[ "$os_ext_sts_vm_state" == "rescued" && "$os_ext_sts_task_state" == "None" ]]
+		then
+			echo -e "Server $vmname is in rescue mode, putting it in unrescue mode..."
+			openstack server unrescue $vmname
+		elif [[ "$os_ext_sts_vm_state" == "active" && "$os_ext_sts_task_state" == "None" ]]
+		then
+			echo -ne "checking image ... "
+			properties=`openstack server show $vmname -c properties -f value`
+			eval $properties
+			cdrom=$(echo $cdrom | sed 's/\,//')
+			if [ -z "$cdrom" ]
+			then
+				echo -e "$vmname is not configured to use cdrom"
+				PauseDisplayScreen2
+			fi
+			echo -ne "$cdrom ... "
+			openstack image list | grep $cdrom > /dev/null 2>&1
+			if [ $? -eq 0 ]
+			then
+				echo -e "exists"
+				echo -e "Putting VM $vmname in rescue mode with image $cdrom"
+				openstack server rescue --image $cdrom $vmname
+			else
+				echo -e "does not exist"
+				PauseDisplayScreen2
+			fi
+
+			#echo -e "DETECT CDROM IMAGE AND USE IT FOR RESCUE"
+		fi
+
+		echo -e "PROBE FOR TOGGLE STATUS AND WHEN READY SHOW CONSOLE URL"
+
+
+
+	else
+		echo -e "VM does not exists"
+	fi
+
+
+
+	PauseDisplayScreen2
+
+}
+
 function ExitNovelloShell
 {
 	echo -e "Exiting NovelloShell"
@@ -560,7 +620,11 @@ function UploadIMAGE
 			echo -e "Image $ImageName already exists, skipping $ImageFile . . . "
 		else 
 			echo -ne "Image $ImageName does not exist, creating image . . . "
-			openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --public --file $ImageFile $ImageName
+		        if [ $ADMINACCESS != "no" ]
+		        then
+				openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --public --file $ImageFile $ImageName
+			fi
+			openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --file $ImageFile $ImageName
 			echo -e "done"
 
 		fi

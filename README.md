@@ -18,6 +18,8 @@ You can configure this tool to use any of your OpenStack deployment to have Rave
   - Start the lab in stopped state
   - Stop the running lab
   - Delete the lab
+  - Toggle boot sequence - supports boot from other image e.g. cd or dvd iso
+    Name of the image to be used for alternate boot is tobe set in server properties as cdrom=imagename
   - Get access to openstack shell for a lab 
     - Restricted access for that specific lab
     - Allows users to run additional openstack commands on the stack specific to that lab environment only
