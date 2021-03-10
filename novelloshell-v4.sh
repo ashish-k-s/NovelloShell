@@ -629,6 +629,7 @@ function UploadIMAGE
 
 		fi
 	done
+	PauseDisplayScreen1
 }
 
 function SelectLab
