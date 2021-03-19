@@ -393,7 +393,7 @@ function ToggleBoot
 {
 	SetUserCredentialsFor $lab
 	echo -e "Listing vms of this lab, please wait..."
-	vms=($(openstack server list -f value))
+	vms=($(openstack server list -c Name -f value))
 	printf '%s\n' "${vms[@]}"
 	read -p "Select the VM to toggle boot: " vmname
 	if [[ " ${vms[@]} " =~ " ${vmname} " ]]
@@ -528,7 +528,7 @@ function ListLabs
 {
 echo -e "Checking list of your labs.."
 SetAdminCredentials
-openstack $CLISUFFIX stack list -c 'Stack Name' -c 'Stack Status' -c 'Creation Time' | grep $USERNAME
+openstack $CLISUFFIX stack list -c 'Stack Name' -c 'Stack Status' -c 'Creation Time' -f value | grep ^$USERNAME-
 SelectLab
 echo -e "checking presence of $lab"
 openstack $CLISUFFIX stack list -c 'Stack Name' | tr -d '|' | tr -d '[:blank:]' | grep ^$lab$
