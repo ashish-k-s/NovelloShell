@@ -480,7 +480,7 @@ source $ADMINRC
 
 function LaunchLabStack
 {
-	lab=$USERNAME-$1
+	lab=$USERNAME-$TAG-$1
 	SetAdminCredentials
 	appendno=0
 	count=1
@@ -502,6 +502,7 @@ function LaunchLabStack
 	fi
 	
 	lab="${lab}_${appendno}"
+
 	mkdir -p "${APPSDIR}/${lab}"
 	cpsrc="${BPSDIR}/${1}/stack_user.yaml"
 	cpdst="${APPSDIR}/${lab}"
