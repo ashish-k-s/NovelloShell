@@ -372,7 +372,7 @@ function LabUPDATE
         SetUserCredentialsFor $lab
         echo -e "Updating lab environment $lab"
 	labdir="${APPSDIR}/${lab}"
-        openstack $CLISUFFIX stack update -t $labdir/stack_user.yaml $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=xxx
+        openstack $CLISUFFIX stack update -t $labdir/stack_user.yaml $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
 	PauseDisplayScreen2
 }
 
@@ -520,7 +520,7 @@ function LaunchLabStack
 	SetUserCredentialsFor $lab
 	fi
 
-	openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=xxx
+	openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
 	return
 }
 
