@@ -86,5 +86,8 @@ ADMINACCESS="no"
 - Make sure to include the name of the blueprint in the name of the image uploaded to the stack.
 - Create a directory with the name of the blueprint at the path denoted by BPSDIR configuration.
 - Create stack_user.yaml file under the blueprint directory to launch the stack.
-- Refer to the demo video for more details.
-
+- Refer to the demo video for more details:
+  - User acccess demo:
+	https://youtu.be/x1O1CZ4wt98
+  - Admin acccess demo:
+	https://youtu.be/1vMT_Jr1rGQ
