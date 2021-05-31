@@ -96,7 +96,7 @@ CLISUFFIX=""
 #
 # If below variable is not set, it is considered that NovelloShell has admin rights with the ADMINRC file set above.
 
-#ADMINACCESSSCRIPT=/path/to/script.sh
+#ADMINACCESSSCRIPT=/path/to/sample-script_manage-user-project.sh
 
 ```
 
