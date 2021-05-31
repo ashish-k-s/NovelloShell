@@ -73,10 +73,30 @@ SKIPIMAGETAG="myteamcommon"
 # This path is looked for upload of image in OpenStack 
 IMAGEFILESPATH="/home/ashishks/novello/TESTING/PROJECTS/IMAGES"
 
-# New option introduced in v4
-# This is to be used with an OSP setup where script dues not have full admin rights
-# NovelloShell will not manage creation of projects per lab in this case.
-ADMINACCESS="no"
+# This option should usually be set to blank. It can be used when any clisiffix is tobe passsed to openstack command.
+# like e.g. "--debug" or "--insecure" 
+CLISUFFIX=""
+
+# Behaviour of "ADMINACCESS=" option is changed in v5
+# Option ADMINACCESS is deprected and this new option is introduced here.
+# This option is to be used with an OSP setup where NovelloShell does not have full admin rights.
+# In such case, custom script should be made available to manage user and project creation.
+# NovelloShell will use the custom script instead of using openstack commands for project and user creation.
+# The custom script should take two arguments:
+# 1) action: create or delete
+# 2) lab name: this is the (same) name of the user and project to be created.
+# Tasks to be performed by custom script:
+#        openstack project create $lab > /dev/null 2>&1
+#        openstack user create --password redhat --project $lab $lab > /dev/null 2>&1
+#        openstack role add --project $lab --user $lab _member_ > /dev/null 2>&1
+#        openstack role add --project $lab --user admin admin > /dev/null 2>&1
+#        openstack quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
+# A shell script having admin access can be used to perform above tasks. The script can be armoured to hide the admin credentials.
+# or this can also be performed by ansible tower job if the option is available.
+#
+# If below variable is not set, it is considered that NovelloShell has admin rights with the ADMINRC file set above.
+
+#ADMINACCESSSCRIPT=/path/to/script.sh
 
 ```
 
