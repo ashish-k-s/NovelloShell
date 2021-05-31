@@ -30,7 +30,7 @@ BPSDIR=$(grep BPSDIR $CONFIGFILE)
 TAG=$(grep TAG $CONFIGFILE)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE)
 IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
-ADMINACCESS=$(grep ADMINACCESS $CONFIGFILE)
+ADMINACCESSSCRIPT=$(grep ADMINACCESSSCRIPT $CONFIGFILE)
 CLISUFFIX=$(grep CLISUFFIX $CONFIGFILE)
 
 eval $PUBLICNETWORK
@@ -40,8 +40,25 @@ eval $BPSDIR
 eval $TAG
 eval $ADMINUSERSFILE
 eval $IMAGEFILESPATH
-typeset -l ADMINACCESS
-eval $ADMINACCESS
+eval $ADMINACCESSSCRIPT
+
+if [ -z ${ADMINACCESSSCRIPT+x} ]
+then
+echo -e "NovelloShell is running with admin rights"
+else
+echo -e "NovelloShell is not running with admin rights"
+fi
+
+
+if [[ -x "$ADMINACCESSSCRIPT" ]]
+then
+echo -e "NovelloShell is using $ADMINACCESSSCRIPT with admin rights"
+else
+echo -e "File $ADMINACCESSSCRIPT does not exist or it is not executable"
+fi
+
+#read p
+
 eval $CLISUFFIX
 
 USERNAME=$(whoami)
@@ -464,8 +481,6 @@ function DisplayScreen2
 
 function SetUserCredentialsFor
 {
-	if [ $ADMINACCESS != "no" ]
-	then
 	lab=$1
         export OS_USERNAME=$lab
         export OS_PASSWORD=redhat
@@ -474,8 +489,6 @@ function SetUserCredentialsFor
         ### FIXME: Required config option for domain settings below
         export OS_USER_DOMAIN_NAME=default
         export OS_PROJECT_DOMAIN_NAME=default
-
-	fi
 }
 
 function SetAdminCredentials
@@ -515,7 +528,7 @@ function LaunchLabStack
 	stackfile="${APPSDIR}/${lab}/stack_user.yaml"
 	echo -e "Stack name:  $lab"
 
-	if [ $ADMINACCESS != "no" ]
+        if [ -z ${ADMINACCESSSCRIPT+x} ]
 	then
 
         ## FIXME: Required config option for usage of --domain --user-domain and --project-domain options below
@@ -526,11 +539,14 @@ function LaunchLabStack
 	openstack $CLISUFFIX role add --user-domain default --project-domain default --project $lab --user admin admin > /dev/null 2>&1
         openstack $CLISUFFIX role add --user $lab --user-domain default --project $lab --project-domain default member  > /dev/null 2>&1
 	openstack $CLISUFFIX quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
+	else
+	cmd="$ADMINACCESSSCRIPT create $lab"
+	eval $cmd
+        fi
 
 	SetUserCredentialsFor $lab
-	fi
+        openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
 
-	openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
 	return
 }
 
@@ -630,7 +646,7 @@ function UploadIMAGE
 			echo -e "Image $ImageName already exists, skipping $ImageFile . . . "
 		else 
 			echo -ne "Image $ImageName does not exist, creating image . . . "
-		        if [ $ADMINACCESS != "no" ]
+		        if [ -z ${ADMINACCESSSCRIPT+x} ]
 		        then
 				openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --public --file $ImageFile $ImageName
 			fi
@@ -770,11 +786,13 @@ openstack $CLISUFFIX stack delete $lab --wait --yes
 if [ $? -eq 0 ]
 then
 	SetAdminCredentials
-	if [ $ADMINACCESS != "no" ]
+        if [ -z ${ADMINACCESSSCRIPT+x} ]
 	then
 	openstack $CLISUFFIX project delete $lab
 	openstack $CLISUFFIX user delete $lab
 	fi
+        cmd="$ADMINACCESSSCRIPT delete $lab"
+        eval $cmd
 	echo -e "\nSuccessfully deleted the lab environment"
 	echo -ne "Deleating associated files..."
 	rm -rf "${APPSDIR}/${lab}"
