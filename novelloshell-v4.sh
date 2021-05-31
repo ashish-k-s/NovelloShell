@@ -470,6 +470,11 @@ function SetUserCredentialsFor
         export OS_USERNAME=$lab
         export OS_PASSWORD=redhat
         export OS_PROJECT_NAME=$lab
+
+        ### FIXME: Required config option for domain settings below
+        export OS_USER_DOMAIN_NAME=default
+        export OS_PROJECT_DOMAIN_NAME=default
+
 	fi
 }
 
@@ -512,10 +517,14 @@ function LaunchLabStack
 
 	if [ $ADMINACCESS != "no" ]
 	then
-	openstack $CLISUFFIX project create $lab > /dev/null 2>&1
-	openstack $CLISUFFIX user create --password redhat --project $lab $lab > /dev/null 2>&1
-	openstack $CLISUFFIX role add --project $lab --user $lab _member_ > /dev/null 2>&1
-	openstack $CLISUFFIX role add --project $lab --user admin admin > /dev/null 2>&1
+
+        ## FIXME: Required config option for usage of --domain --user-domain and --project-domain options below
+
+	openstack $CLISUFFIX project create $lab --domain default > /dev/null 2>&1
+	openstack $CLISUFFIX user create --password redhat --project $lab $lab --domain default > /dev/null 2>&1
+	openstack $CLISUFFIX role add --user-domain default --project-domain default --project $lab --user $lab _member_ > /dev/null 2>&1
+	openstack $CLISUFFIX role add --user-domain default --project-domain default --project $lab --user admin admin > /dev/null 2>&1
+        openstack $CLISUFFIX role add --user $lab --user-domain default --project $lab --project-domain default member  > /dev/null 2>&1
 	openstack $CLISUFFIX quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
 
 	SetUserCredentialsFor $lab
