@@ -17,6 +17,7 @@
 
 CONFIGFILE=".novelloshell.cfg"
 
+
 if [ ! -f "$CONFIGFILE" ]
 then 
 echo -e "ERROR: $CONFIGFILE does not exist"
@@ -528,20 +529,18 @@ function LaunchLabStack
 	stackfile="${APPSDIR}/${lab}/stack_user.yaml"
 	echo -e "Stack name:  $lab"
 
-        if [ -z ${ADMINACCESSSCRIPT+x} ]
+	if [[ -x "$ADMINACCESSSCRIPT" ]]
 	then
-
+	cmd="$ADMINACCESSSCRIPT create $lab"
+	eval $cmd
+	else
         ## FIXME: Required config option for usage of --domain --user-domain and --project-domain options below
-
 	openstack $CLISUFFIX project create $lab --domain default > /dev/null 2>&1
 	openstack $CLISUFFIX user create --password redhat --project $lab $lab --domain default > /dev/null 2>&1
 	openstack $CLISUFFIX role add --user-domain default --project-domain default --project $lab --user $lab _member_ > /dev/null 2>&1
 	openstack $CLISUFFIX role add --user-domain default --project-domain default --project $lab --user admin admin > /dev/null 2>&1
         openstack $CLISUFFIX role add --user $lab --user-domain default --project $lab --project-domain default member  > /dev/null 2>&1
 	openstack $CLISUFFIX quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
-	else
-	cmd="$ADMINACCESSSCRIPT create $lab"
-	eval $cmd
         fi
 
 	SetUserCredentialsFor $lab
