@@ -15,8 +15,7 @@
 
 # Report Bugs: ashish.k.shah@gmail.com
 
-CONFIGFILE=".novelloshell.cfg"
-
+CONFIGFILE="/mnt/NovelloShell/.novelloshell.cfg"
 
 if [ ! -f "$CONFIGFILE" ]
 then 
@@ -31,7 +30,10 @@ BPSDIR=$(grep BPSDIR $CONFIGFILE)
 TAG=$(grep TAG $CONFIGFILE)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE)
 IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
-ADMINACCESSSCRIPT=$(grep ADMINACCESSSCRIPT $CONFIGFILE)
+ADMINACCESS=$(grep ADMINACCESS= $CONFIGFILE)
+DOMAIN=$(grep DOMAIN= $CONFIGFILE)
+ADMIN_USRROL_SCRIPT=$(grep ADMIN_USRROL_SCRIPT= $CONFIGFILE)
+ADMIN_STACK_SCRIPT=$(grep ADMIN_STACK_SCRIPT= $CONFIGFILE)
 CLISUFFIX=$(grep CLISUFFIX $CONFIGFILE)
 
 eval $PUBLICNETWORK
@@ -41,21 +43,37 @@ eval $BPSDIR
 eval $TAG
 eval $ADMINUSERSFILE
 eval $IMAGEFILESPATH
-eval $ADMINACCESSSCRIPT
+typeset -l ADMINACCESS
+eval $ADMINACCESS
+eval $DOMAIN
 
-if [ -z ${ADMINACCESSSCRIPT+x} ]
+if [ $ADMINACCESS == "no" ]
 then
-echo -e "NovelloShell is running with admin rights"
+echo -e "NovelloShell is running without admin rights"
+eval $ADMIN_USRROL_SCRIPT
+eval $ADMIN_STACK_SCRIPT
+
+echo $ADMIN_USRROL_SCRIPT
+echo $ADMIN_STACK_SCRIPT
+
+if [[ -x "$ADMIN_USRROL_SCRIPT" ]]
+then
+echo -e "NovelloShell will be using $ADMIN_USRROL_SCRIPT for user and role creation"
 else
-echo -e "NovelloShell is not running with admin rights"
+echo -e "File $ADMIN_USRROL_SCRIPT configured tobe used for user and role creation does not exist or it is not executable"
+exit 1
 fi
 
-
-if [[ -x "$ADMINACCESSSCRIPT" ]]
+if [[ -x "$ADMIN_STACK_SCRIPT" ]]
 then
-echo -e "NovelloShell is using $ADMINACCESSSCRIPT with admin rights"
+echo -e "NovelloShell will be using $ADMIN_STACK_SCRIPT for listing of all stacks"
 else
-echo -e "File $ADMINACCESSSCRIPT does not exist or it is not executable"
+echo -e "File $ADMIN_STK_SCRIPT configured tobe used for listing of all stacks does not exist or it is not executable"
+exit 1
+fi
+
+else
+echo -e "NovelloShell is running with admin rights"
 fi
 
 #read p
@@ -77,6 +95,15 @@ cd $BPSDIR
 
 bold=`tput bold`
 normal=`tput sgr0`
+
+## This function may need to be tweaked based on the requirements of the ADMIN_STACK_SCRIPT being called.
+## ekg USERNAME argument passed here may or may not be needed based on the ADMIN_STACK_SCRIPT implementation.
+function exec_admin_stack_script
+{
+echo -e $ADMIN_STACK_SCRIPT
+echo -e $@
+eval $ADMIN_STACK_SCRIPT $USERNAME $@
+}
 
 function PrintMenuOptions1
 {
@@ -488,8 +515,8 @@ function SetUserCredentialsFor
         export OS_PROJECT_NAME=$lab
 
         ### FIXME: Required config option for domain settings below
-        export OS_USER_DOMAIN_NAME=default
-        export OS_PROJECT_DOMAIN_NAME=default
+        export OS_USER_DOMAIN_NAME=$DOMAIN
+        export OS_PROJECT_DOMAIN_NAME=$DOMAIN
 }
 
 function SetAdminCredentials
@@ -503,10 +530,20 @@ function LaunchLabStack
 	SetAdminCredentials
 	appendno=0
 	count=1
+        if [[ "$ADMINACCESS" != "no" ]]
+	then
         runninglabs=$(openstack $CLISUFFIX stack list | grep $lab | wc -l)
+	else
+        runninglabs=$(exec_admin_stack_script | grep $lab | wc -l)
+	fi
         if [ $runninglabs -gt 0 ]
         then
+	        if [[ "$ADMINACCESS" != "no" ]]
+		then
 		runninglabnos=$(openstack $CLISUFFIX stack list -c 'Stack Name' | grep $lab | tr -d '|' | tr -d '[:blank:]' | rev | cut -d '_' -f 1)
+		else
+		runninglabnos=$(exec_admin_stack_script -c "'Stack Name'" | grep $lab | tr -d '|' | tr -d '[:blank:]' | rev | cut -d '_' -f 1)
+		fi
 		while [ $appendno -eq 0 ]
 		do
 			if [[ $runninglabnos == *$count* ]]
@@ -529,9 +566,9 @@ function LaunchLabStack
 	stackfile="${APPSDIR}/${lab}/stack_user.yaml"
 	echo -e "Stack name:  $lab"
 
-	if [[ -x "$ADMINACCESSSCRIPT" ]]
+        if [[ "$ADMINACCESS" == "no" ]]
 	then
-	cmd="$ADMINACCESSSCRIPT create $lab"
+	cmd="$ADMIN_USRROL_SCRIPT create $lab"
 	eval $cmd
 	else
         ## FIXME: Required config option for usage of --domain --user-domain and --project-domain options below
@@ -553,7 +590,13 @@ function ListLabs
 {
 echo -e "Checking list of your labs.."
 SetAdminCredentials
+if [[ "$ADMINACCESS" != 'no' ]]
+then
 openstack $CLISUFFIX stack list -c 'Stack Name' -c 'Stack Status' -c 'Creation Time' -f value | grep ^$USERNAME-
+else
+exec_admin_stack_script -c "'Stack Name'" -c "'Stack Status'" -c "'Creation Time'" -f value | grep ^$USERNAME-
+fi
+
 SelectLab
 echo -e "checking presence of $lab"
 openstack $CLISUFFIX stack list -c 'Stack Name' | tr -d '|' | tr -d '[:blank:]' | grep ^$lab$
@@ -645,11 +688,12 @@ function UploadIMAGE
 			echo -e "Image $ImageName already exists, skipping $ImageFile . . . "
 		else 
 			echo -ne "Image $ImageName does not exist, creating image . . . "
-		        if [ -z ${ADMINACCESSSCRIPT+x} ]
+		        if [ $ADMINACCESS != "no" ]
 		        then
 				openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --public --file $ImageFile $ImageName
-			fi
+			else
 			openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --file $ImageFile $ImageName
+			fi
 			echo -e "done"
 
 		fi
@@ -785,13 +829,14 @@ openstack $CLISUFFIX stack delete $lab --wait --yes
 if [ $? -eq 0 ]
 then
 	SetAdminCredentials
-        if [ -z ${ADMINACCESSSCRIPT+x} ]
+        if [ $ADMINACCESS != "no" ]
 	then
 	openstack $CLISUFFIX project delete $lab
 	openstack $CLISUFFIX user delete $lab
-	fi
-        cmd="$ADMINACCESSSCRIPT delete $lab"
+	else
+        cmd="$ADMIN_USRROL_SCRIPT delete $lab"
         eval $cmd
+	fi
 	echo -e "\nSuccessfully deleted the lab environment"
 	echo -ne "Deleating associated files..."
 	rm -rf "${APPSDIR}/${lab}"
