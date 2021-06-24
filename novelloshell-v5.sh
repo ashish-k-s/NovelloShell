@@ -15,7 +15,7 @@
 
 # Report Bugs: ashish.k.shah@gmail.com
 
-CONFIGFILE="/mnt/NovelloShell/.novelloshell.cfg"
+CONFIGFILE="/etc/novelloshell.cfg"
 
 if [ ! -f "$CONFIGFILE" ]
 then 
