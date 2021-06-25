@@ -49,6 +49,7 @@ eval $DOMAIN
 
 if [ $ADMINACCESS == "no" ]
 then
+accesstype="non-admin"
 echo -e "NovelloShell is running without admin rights"
 eval $ADMIN_USRROL_SCRIPT
 eval $ADMIN_STACK_SCRIPT
@@ -73,6 +74,7 @@ exit 1
 fi
 
 else
+accesstype="admin"
 echo -e "NovelloShell is running with admin rights"
 fi
 
@@ -95,6 +97,7 @@ cd $BPSDIR
 
 bold=`tput bold`
 normal=`tput sgr0`
+italic=`tput sgr3`
 
 ## This function may need to be tweaked based on the requirements of the ADMIN_STACK_SCRIPT being called.
 ## ekg USERNAME argument passed here may or may not be needed based on the ADMIN_STACK_SCRIPT implementation.
@@ -110,6 +113,7 @@ function PrintMenuOptions1
 	clear
 	echo -e "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
 \t=================================================================================\n
+RHOS access for NovelloShell: $accesstype\n
 ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
@@ -358,7 +362,7 @@ function LabSAVE
 	openstack $CLISUFFIX server list -c Name -c Status -f value
 
 	OLDLAB=$(openstack $CLISUFFIX stack list -c 'Stack Name' -f value)
-	OLDLAB=$(echo $OLDLAB | cut -d '-' -f 2- | rev | cut -d '_' -f 2- | rev)
+	OLDLAB=$(echo $OLDLAB | cut -d '-' -f 3- | rev | cut -d '_' -f 2- | rev)
 	echo -e "Cloaning current status of $lab to $NEWLAB"
 
 	cp -r $APPSDIR/$lab $BPSDIR/$NEWLAB
@@ -572,11 +576,11 @@ function LaunchLabStack
 	eval $cmd
 	else
         ## FIXME: Required config option for usage of --domain --user-domain and --project-domain options below
-	openstack $CLISUFFIX project create $lab --domain default > /dev/null 2>&1
-	openstack $CLISUFFIX user create --password redhat --project $lab $lab --domain default > /dev/null 2>&1
-	openstack $CLISUFFIX role add --user-domain default --project-domain default --project $lab --user $lab _member_ > /dev/null 2>&1
-	openstack $CLISUFFIX role add --user-domain default --project-domain default --project $lab --user admin admin > /dev/null 2>&1
-        openstack $CLISUFFIX role add --user $lab --user-domain default --project $lab --project-domain default member  > /dev/null 2>&1
+	openstack $CLISUFFIX project create $lab --domain $DOMAIN > /dev/null 2>&1
+	openstack $CLISUFFIX user create --password redhat --project $lab $lab --domain $DOMAIN > /dev/null 2>&1
+	openstack $CLISUFFIX role add --user-domain $DOMAIN --project-domain $DOMAIN --project $lab --user $lab _member_ > /dev/null 2>&1
+	openstack $CLISUFFIX role add --user-domain $DOMAIN --project-domain $DOMAIN --project $lab --user admin admin > /dev/null 2>&1
+        openstack $CLISUFFIX role add --user $lab --user-domain $DOMAIN --project $lab --project-domain $DOMAIN member  > /dev/null 2>&1
 	openstack $CLISUFFIX quota set --cores -1 --instances -1 --ram -1 $lab > /dev/null 2>&1
         fi
 
