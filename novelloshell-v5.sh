@@ -34,7 +34,8 @@ ADMINACCESS=$(grep ADMINACCESS= $CONFIGFILE  | grep -v ^#)
 DOMAIN=$(grep DOMAIN= $CONFIGFILE  | grep -v ^#)
 ADMIN_USRROL_SCRIPT=$(grep ADMIN_USRROL_SCRIPT= $CONFIGFILE  | grep -v ^#)
 ADMIN_STACK_SCRIPT=$(grep ADMIN_STACK_SCRIPT= $CONFIGFILE  | grep -v ^#)
-CLISUFFIX=$(grep CLISUFFIX $CONFIGFILE  | grep -v ^#)
+CLISUFFIX=$(grep CLISUFFIX= $CONFIGFILE  | grep -v ^#)
+CLUSTERNAME=$(grep CLUSTERNAME= $CONFIGFILE  | grep -v ^#)
 
 eval $PUBLICNETWORK
 eval $ADMINRC
@@ -46,6 +47,12 @@ eval $IMAGEFILESPATH
 typeset -l ADMINACCESS
 eval $ADMINACCESS
 eval $DOMAIN
+eval $CLUSTERNAME
+
+if [ -z "$CLUSTERNAME" ]
+then
+CLUSTERNAME="RHOS"
+fi
 
 if [ $ADMINACCESS == "no" ]
 then
@@ -113,7 +120,7 @@ function PrintMenuOptions1
 	clear
 	echo -e "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
 \t=================================================================================\n
-RHOS access for NovelloShell: $accesstype\n
+NovelloShell access on $CLUSTERNAME : $accesstype\n
 ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
@@ -375,7 +382,7 @@ function LabSAVE
 		servername=$(echo $i | awk '{print $1}')
 		curimgname=$(echo $i | awk '{print $2}')
 		newimgname=$(echo "${curimgname/$OLDLAB/$NEWLAB}")
-		echo -e "Processing $servername with image $curimgname"
+		echo -e "Processing $servername running from image $curimgname"
 	        
 		##Avoid cloaning common images
 	        if [[ $curimgname =~ "pntaecommon" ]]
@@ -384,7 +391,20 @@ function LabSAVE
         	        continue
 	        fi
 
-		echo -e "Creating new image: $newimgname"
+                ##If derived new image name is same as old image name, append project name to it.
+                if [[ $curimgname == "$newimgname" ]]
+                then
+                        echo -e "Appending $NEWLAB to $newimgname"
+			newimgname=$(echo $NEWLAB-$newimgname)
+                fi
+
+		read -p "New image name [$newimgname] (Provide new name or hit Enter to accept current name): " new_img_name
+		if [[ ! -z $new_img_name ]]
+		then
+		newimgname=$(echo $new_img_name)
+		fi
+		echo -e "Creating new image $newimgname from $servername..." 
+
 		openstack $CLISUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
 		sed -i "s/$curimgname/$newimgname/g" $newstackfile
 	done
