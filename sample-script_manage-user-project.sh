@@ -1,6 +1,6 @@
 TOWER_HOST=https://tower.engineering.redhat.com
-TOWER_OAUTH_TOKEN=VoXDnTL6fMloFjYnAiXQYTesTXnEwO
-TOWER_TOKEN=VoXDnTL6fMloFjYnAiXQYTesTXnEwO
+TOWER_OAUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TOWER_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 JOBID=5695
 if [ $# -ne 2 ] 
 then 

@@ -65,4 +65,6 @@ IMAGEFILESPATH="/export/novello/TESTING/PROJECTS/IMAGES"
 ADMINACCESS=no
 ADMIN_USRROL_SCRIPT="/path/to/rhosp_manage-user-project.sh"
 ADMIN_STACK_SCRIPT="/path/to/rhosp_stack-list.sh"
+ADMIN_PUBLISH_IMAGE_SCRIPT="/path/to/rhosp_publish-image.sh"
+PROJECTID=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

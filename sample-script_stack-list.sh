@@ -8,8 +8,8 @@
 # as the output provided by running command on console
 
 TOWER_HOST=https://tower.engineering.redhat.com
-TOWER_OAUTH_TOKEN=VoXDnTL6fMloFjYnAiXQYTesTXnEwO
-TOWER_TOKEN=VoXDnTL6fMloFjYnAiXQYTesTXnEwO
+TOWER_OAUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TOWER_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 JOBID=5942
 if [[ $# -eq 0 ]]
 then 
