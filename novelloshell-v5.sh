@@ -34,8 +34,11 @@ ADMINACCESS=$(grep ADMINACCESS= $CONFIGFILE  | grep -v ^#)
 DOMAIN=$(grep DOMAIN= $CONFIGFILE  | grep -v ^#)
 ADMIN_USRROL_SCRIPT=$(grep ADMIN_USRROL_SCRIPT= $CONFIGFILE  | grep -v ^#)
 ADMIN_STACK_SCRIPT=$(grep ADMIN_STACK_SCRIPT= $CONFIGFILE  | grep -v ^#)
+ADMIN_PUBLISH_IMAGE_SCRIPT=$(grep ADMIN_PUBLISH_IMAGE_SCRIPT= $CONFIGFILE  | grep -v ^#)
 CLISUFFIX=$(grep CLISUFFIX= $CONFIGFILE  | grep -v ^#)
 CLUSTERNAME=$(grep CLUSTERNAME= $CONFIGFILE  | grep -v ^#)
+PROJECTID=$(grep PROJECTID= $CONFIGFILE  | grep -v ^#)
+
 
 eval $PUBLICNETWORK
 eval $ADMINRC
@@ -47,6 +50,7 @@ eval $IMAGEFILESPATH
 typeset -l ADMINACCESS
 eval $ADMINACCESS
 eval $DOMAIN
+eval $PROJECTID
 eval $CLUSTERNAME
 
 if [ -z "$CLUSTERNAME" ]
@@ -60,6 +64,7 @@ accesstype="non-admin"
 echo -e "NovelloShell is running without admin rights"
 eval $ADMIN_USRROL_SCRIPT
 eval $ADMIN_STACK_SCRIPT
+eval $ADMIN_PUBLISH_IMAGE_SCRIPT
 
 echo $ADMIN_USRROL_SCRIPT
 echo $ADMIN_STACK_SCRIPT
@@ -77,6 +82,14 @@ then
 echo -e "NovelloShell will be using $ADMIN_STACK_SCRIPT for listing of all stacks"
 else
 echo -e "File $ADMIN_STK_SCRIPT configured tobe used for listing of all stacks does not exist or it is not executable"
+exit 1
+fi
+
+if [[ -x "$ADMIN_PUBLISH_IMAGE_SCRIPT" ]]
+then
+echo -e "NovelloShell will be using $ADMIN_PUBLISH_IMAGE_SCRIPT for publishing images"
+else
+echo -e "File $ADMIN_PUBLISH_IMAGE_SCRIPT configured tobe used for publishing image does not exist or it is not executable"
 exit 1
 fi
 
@@ -113,6 +126,20 @@ function exec_admin_stack_script
 echo -e $ADMIN_STACK_SCRIPT
 echo -e $@
 eval $ADMIN_STACK_SCRIPT $USERNAME $@
+}
+
+function exec_admin_usrrol_script
+{
+echo -e $ADMIN_USRROL_SCRIPT
+echo -e $@
+eval $ADMIN_USRROL_SCRIPT $@
+}
+
+function exec_admin_publish_image_script
+{
+echo -e $ADMIN_PUBLISH_IMAGE_SCRIPT
+echo -e $@
+eval $ADMIN_PUBLISH_IMAGE_SCRIPT $@
 }
 
 function PrintMenuOptions1
@@ -428,7 +455,12 @@ function LabSAVE
                 fi
 
 		echo -e "Setting $image as public image"
-		openstack $CLISUFFIX image set --property visibility=public $image 
+		if [ $ADMINACCESS == "no" ]
+		then
+			exec_admin_publish_image_script $PROJECTID $image
+		else 
+			openstack $CLISUFFIX image set --property visibility=public $image 
+		fi
 	done
 
 	SetUserCredentialsFor $lab
@@ -592,8 +624,7 @@ function LaunchLabStack
 
         if [[ "$ADMINACCESS" == "no" ]]
 	then
-	cmd="$ADMIN_USRROL_SCRIPT create $lab"
-	eval $cmd
+	exec_admin_usrrol_script create $lab
 	else
         ## FIXME: Required config option for usage of --domain --user-domain and --project-domain options below
 	openstack $CLISUFFIX project create $lab --domain $DOMAIN > /dev/null 2>&1
@@ -859,8 +890,7 @@ then
 	openstack $CLISUFFIX project delete $lab
 	openstack $CLISUFFIX user delete $lab
 	else
-        cmd="$ADMIN_USRROL_SCRIPT delete $lab"
-        eval $cmd
+        exec_admin_usrrol_script delete $lab
 	fi
 	echo -e "\nSuccessfully deleted the lab environment"
 	echo -ne "Deleating associated files..."
