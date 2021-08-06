@@ -1,0 +1,4 @@
+- Variable for max number of labs per user
+- Maintain logs of usage for troubleshooting
+- Maintain count of per user lab access for usage statistics [e.g. USERNAME.count file]
+
