@@ -14,6 +14,16 @@ BPSDIR="/mnt/novello/TESTING/PROJECTS/BPS"
 # This is to indetify the resources on the infrastructorure being shared by multiple teams.
 TAG="my-team"
 
+# URL containing FAQs about usage of novelloshell in the environment
+# It is displayed on the first screen of the novelloshell
+
+FAQURL="https://github.com/ashish-k-s/NovelloShell"
+
+# Name of RHOS cluster for user's information.
+# String "RHOS" is used of this name is not set.
+#CLUSTERNAME="rhos-c"
+CLUSTERNAME="rhos-d"
+
 # Set the domain to be used if it is different from the domain being used in ADMINRC file
 # This may require when there is no admin access for rhosp i.e. with ADMINACCESS=no
 DOMAIN="subdomain.domain.com"

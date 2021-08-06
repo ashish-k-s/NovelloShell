@@ -28,6 +28,7 @@ ADMINRC=$(grep ADMINRC $CONFIGFILE  | grep -v ^#)
 APPSDIR=$(grep APPSDIR $CONFIGFILE  | grep -v ^#)
 BPSDIR=$(grep BPSDIR $CONFIGFILE  | grep -v ^#)
 TAG=$(grep TAG $CONFIGFILE  | grep -v ^#)
+FAQURL=$(grep FAQURL $CONFIGFILE  | grep -v ^#)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE  | grep -v ^#)
 IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
 ADMINACCESS=$(grep ADMINACCESS= $CONFIGFILE  | grep -v ^#)
@@ -45,6 +46,7 @@ eval $ADMINRC
 eval $APPSDIR
 eval $BPSDIR
 eval $TAG
+eval $FAQURL
 eval $ADMINUSERSFILE
 eval $IMAGEFILESPATH
 typeset -l ADMINACCESS
@@ -147,7 +149,8 @@ function PrintMenuOptions1
 	clear
 	echo -e "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
 \t=================================================================================\n
-NovelloShell access on $CLUSTERNAME : $accesstype\n
+NovelloShell access on ${bold} $CLUSTERNAME : $accesstype ${normal}
+FAQs : $FAQURL \n
 ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
