@@ -30,6 +30,11 @@ You can configure this tool to use any of your OpenStack deployment to have Rave
 - Multi user support with access restriction to owner's labs
 - Features like save as blueprint, delete blueprint, upload image, can be restricted to few users with admin rights
 
+## How it works
+
+image::novelloshell.png[width=100%]
+.NovelloShell working
+
 
 ## How to configure
 
