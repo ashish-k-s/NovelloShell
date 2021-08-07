@@ -32,8 +32,7 @@ You can configure this tool to use any of your OpenStack deployment to have Rave
 
 ## How it works
 
-image::novelloshell.png[width=100%]
-.NovelloShell working
+![Alt text](novelloshell.png?raw=true "How NovelloShell works")
 
 
 ## How to configure
