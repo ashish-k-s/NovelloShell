@@ -408,10 +408,10 @@ function LabSAVE
 	IFS=$'\n'
 	for i in $(openstack $CLISUFFIX server list -c Name -c Image -f value)
 	do
-		echo $i
+		echo -e "\n$i"
 		servername=$(echo $i | awk '{print $1}')
 		curimgname=$(echo $i | awk '{print $2}')
-		newimgname=$(echo "${curimgname/$OLDLAB/$NEWLAB}")
+		newimgname=$(echo "${NEWLAB}-${servername}")
 		echo -e "Processing $servername running from image $curimgname"
 	        
 		##Avoid cloaning common images
@@ -421,13 +421,6 @@ function LabSAVE
         	        continue
 	        fi
 
-                ##If derived new image name is same as old image name, append project name to it.
-                if [[ $curimgname == "$newimgname" ]]
-                then
-                        echo -e "Appending $NEWLAB to $newimgname"
-			newimgname=$(echo $NEWLAB-$newimgname)
-                fi
-
 		read -p "New image name [$newimgname] (Provide new name or hit Enter to accept current name): " new_img_name
 		if [[ ! -z $new_img_name ]]
 		then
@@ -436,10 +429,11 @@ function LabSAVE
 		echo -e "Creating new image $newimgname from $servername..." 
 
 		openstack $CLISUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
+		echo -e "Replacing $curimgname with $newimgname in $newstackfile"
 		sed -i "s/$curimgname/$newimgname/g" $newstackfile
 	done
 
-	echo -e "Waiting for 2 minutes for images to be active..."
+	echo -e "\nWaiting for 2 minutes for images to be active..."
 	sleep 120
 
 	echo -e "Setting new images public..."
@@ -465,6 +459,11 @@ function LabSAVE
 			openstack $CLISUFFIX image set --property visibility=public $image 
 		fi
 	done
+
+	# Print warning due to limitation of processing images if two servers are using same image.
+	echo -e " NOTE: If current lab is using same image for multiple servers, corresponding new images are not processed correctly. \
+You are required to manually publish a few private images from current lab and also manually change the image name in new blueprint's heat template. \
+Do not delete this lab until you verify the new blueprint."
 
 	SetUserCredentialsFor $lab
 

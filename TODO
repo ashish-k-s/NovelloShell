@@ -2,3 +2,7 @@
 - Maintain logs of usage for troubleshooting
 - Maintain count of per user lab access for usage statistics [e.g. USERNAME.count file]
 
+- Bug in SAVE option:
+If heat template is using same image for multiple servers, corresponding new images are not processed correctly.
+It is required to manually publish a few private images from current app
+and also manually change the image name in new blueprint's heat template.
