@@ -29,6 +29,7 @@ APPSDIR=$(grep APPSDIR $CONFIGFILE  | grep -v ^#)
 BPSDIR=$(grep BPSDIR $CONFIGFILE  | grep -v ^#)
 TAG=$(grep TAG $CONFIGFILE  | grep -v ^#)
 FAQURL=$(grep FAQURL $CONFIGFILE  | grep -v ^#)
+MOTD=$(grep MOTD $CONFIGFILE  | grep -v ^#)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE  | grep -v ^#)
 IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
 ADMINACCESS=$(grep ADMINACCESS= $CONFIGFILE  | grep -v ^#)
@@ -47,6 +48,7 @@ eval $APPSDIR
 eval $BPSDIR
 eval $TAG
 eval $FAQURL
+eval $MOTD
 eval $ADMINUSERSFILE
 eval $IMAGEFILESPATH
 typeset -l ADMINACCESS
@@ -125,22 +127,22 @@ italic=`tput sgr3`
 ## ekg USERNAME argument passed here may or may not be needed based on the ADMIN_STACK_SCRIPT implementation.
 function exec_admin_stack_script
 {
-echo -e $ADMIN_STACK_SCRIPT
-echo -e $@
+#echo -e $ADMIN_STACK_SCRIPT
+#echo -e $@
 eval $ADMIN_STACK_SCRIPT $USERNAME $@
 }
 
 function exec_admin_usrrol_script
 {
-echo -e $ADMIN_USRROL_SCRIPT
-echo -e $@
+#echo -e $ADMIN_USRROL_SCRIPT
+#echo -e $@
 eval $ADMIN_USRROL_SCRIPT $@
 }
 
 function exec_admin_publish_image_script
 {
-echo -e $ADMIN_PUBLISH_IMAGE_SCRIPT
-echo -e $@
+#echo -e $ADMIN_PUBLISH_IMAGE_SCRIPT
+#echo -e $@
 eval $ADMIN_PUBLISH_IMAGE_SCRIPT $@
 }
 
@@ -150,7 +152,8 @@ function PrintMenuOptions1
 	echo -e "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
 \t=================================================================================\n
 NovelloShell access on ${bold} $CLUSTERNAME : $accesstype ${normal}
-FAQs : $FAQURL \n
+FAQs : $FAQURL
+${bold}$MOTD${normal} \n
 ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
@@ -426,6 +429,11 @@ function LabSAVE
 		then
 		newimgname=$(echo $new_img_name)
 		fi
+
+		if [[ $newimgname != *"$TAG"* ]]; then
+			newimgname=$newimgname-pntae
+		fi
+
 		echo -e "Creating new image $newimgname from $servername..." 
 
 		openstack $CLISUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
@@ -451,7 +459,7 @@ function LabSAVE
                         continue
                 fi
 
-		echo -e "Setting $image as public image"
+		echo -e "\nSetting $image as public image"
 		if [ $ADMINACCESS == "no" ]
 		then
 			exec_admin_publish_image_script $PROJECTID $image
@@ -461,8 +469,8 @@ function LabSAVE
 	done
 
 	# Print warning due to limitation of processing images if two servers are using same image.
-	echo -e " NOTE: If current lab is using same image for multiple servers, corresponding new images are not processed correctly. \
-You are required to manually publish a few private images from current lab and also manually change the image name in new blueprint's heat template. \
+	echo -e "\nNOTE: If current lab is using same image for multiple servers, corresponding new images are not processed correctly. \n \
+You are required to manually publish a few private images from current lab and also manually change the image name in new blueprint's heat template. \n \
 Do not delete this lab until you verify the new blueprint."
 
 	SetUserCredentialsFor $lab
@@ -702,6 +710,11 @@ function GetImageNameTypeFromFile
 {
 extn=$(echo $ImageFile | rev | cut -d '.' -f 1 | rev)
 ImageName=$(echo $ImageFile | rev | cut -d '.' -f 2- | rev)
+
+if [[ $ImageName != *"$TAG"* ]]; then
+        ImageName=$ImageName-$TAG
+fi
+
 ###echo -e "ImageName: $ImageName"
 ###echo -e "extn: $extn"
 if [[ $extn == "img" || $extn == "raw" ]]
