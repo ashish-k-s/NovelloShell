@@ -162,7 +162,9 @@ list - List launched labs"
 
 if [ $ADMINUSER -eq 1 ]
 then
-echo -e "DELETE - Delete the lab environment blueprint"
+echo -e "DELETE - Delete lab environment blueprint"
+echo -e "CLONE - Clone a new lab from existing lab environment template"
+echo -e "EDIT - Edit lab environment blueprint"
 echo -e "IMAGE - Upload images to Novello cluster"
 fi
 
@@ -228,6 +230,26 @@ case "$choice" in
 		DisplayScreen1
 		fi
 		;;
+        'CLONE')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintCLONE
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
+        'EDIT')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintEDIT
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
         'IMAGE')
                 if [ $ADMINUSER -eq 1 ]
                 then
@@ -407,6 +429,7 @@ function LabSAVE
 
 	cp -r $APPSDIR/$lab $BPSDIR/$NEWLAB
 	newstackfile="${BPSDIR}/${NEWLAB}/stack_user.yaml"
+	chmod -R a+w $BPSDIR/$NEWLAB
 	OLDIFS=$(echo $IFS)
 	IFS=$'\n'
 	for i in $(openstack $CLISUFFIX server list -c Name -c Image -f value)
@@ -811,6 +834,11 @@ function LabBlueprintDELETE
 	SelectLab
 	if [ -d $choice ]
 	then
+		if [[ $choice == *"template"*  ]]
+		then
+			echo -e "Template blueprints cannot be deleted. Contact NovelloShell administrator if you still wish to delete this"
+			PauseDisplayScreen1
+		fi
 		echo -e "Are you sure you want to delete the lab environment blueprint $choice ? (YES|NO)"
 		read confirm
 		if [[ $confirm != 'YES' ]]
@@ -819,7 +847,7 @@ function LabBlueprintDELETE
 		        PauseDisplayScreen1
 		fi
 
-		echo -e "All associated images will be permanently deleted. Do you want to proceed? (YES|NO)"
+		echo -e "All associated images may be permanently deleted. Do you want to proceed? (YES|NO)"
 		read confirm
 		if [[ $confirm != 'YES' ]]
 		then
@@ -834,6 +862,77 @@ function LabBlueprintDELETE
 	echo -e "Ivalid option, hit Enter to try again"
 	read p
 	LabBlueprintDELETE
+}
+
+function CloneTemplate
+{
+	if [[ $1 != *"template"* ]]
+	then
+	echo -e "Only template blueprints can be cloned"
+	PauseDisplayScreen1
+	fi
+	echo -e "Creating new template from $1"
+	echo -ne "Enter the name of the new blueprint: "
+	read newbpname
+        if [ -d $newbpname ]
+        then
+                echo -e "Blueprint $newbpname already exists!"
+                echo -e "Consider editing existing blueprint or create clone with different name."
+                PauseDisplayScreen1
+        fi
+	cp -r $1 $newbpname
+	chmod -R a+w $newbpname
+	if [ $? -eq 0 ]
+	then
+	sed -i "s|$1|$newbpname|g" $newbpname/stack_user.yaml
+	if [ $? -eq 0 ]
+	then
+	chmod -R a+w $newbpname
+	echo -e "Successfully cloned $newbpname from $1!"
+	PauseDisplayScreen1
+	fi
+	fi
+	echo -e "Something went wrong while cloning $newbpname from $1!"
+	echo -e "Review $newbpname before using it"
+	PauseDisplayScreen1
+}
+
+function LabBlueprintCLONE
+{
+echo -e "This feature is still under development"
+        echo -e "Clone a new lab environment from existing template"
+        echo -e "=================================================="
+        cd $BPSDIR
+        ls
+        SelectLab
+        if [ -d $choice ]
+        then
+                CloneTemplate $choice
+		PauseDisplayScreen1
+        fi
+        echo -e "Ivalid option, hit Enter to try again"
+        read p
+        LabBlueprintCLONE
+
+}
+
+function LabBlueprintEDIT
+{
+        clear
+	echo -e "CAUTION: This may break the lab environment, make sure you know what you are doing\n"
+        echo -e "Edit a lab environment blueprint"
+        echo -e "================================"
+        cd $BPSDIR
+        ls
+        SelectLab
+        if [ -d $choice ]
+        then
+                vi $choice/stack_user.yaml
+                DisplayScreen1
+        fi
+        echo -e "Ivalid option, hit Enter to try again"
+        read p
+        LabBlueprintEDIT
 }
 
 function LabDataDELETE
