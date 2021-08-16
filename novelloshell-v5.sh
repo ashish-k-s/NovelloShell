@@ -378,7 +378,12 @@ function StatusLab
 {
 	SetUserCredentialsFor $lab
 	echo -e "Probing status of $lab"
-	openstack $CLISUFFIX server list
+	openstack $CLISUFFIX stack list
+	echo -e "Probing lab access details..."
+	for n in {1..7}
+	do
+        	openstack $CLISUFFIX stack output show $lab output_$n -c output_value -f value 2> /dev/null
+	done
 	PauseDisplayScreen2
 }
 
