@@ -382,7 +382,7 @@ function StatusLab
 	echo -e "Probing lab access details..."
 	for n in {1..7}
 	do
-        	openstack $CLISUFFIX stack output show $lab output_$n -c output_value -f value 2> /dev/null
+		openstack $CLISUFFIX stack output show $lab output_$n -c output_value -f value 2> /dev/null
 	done
 	PauseDisplayScreen2
 }
@@ -398,6 +398,11 @@ function LabEDIT
 
 function LabSAVE
 {
+	SetAdminCredentials
+        echo -ne "\nGettng list of available images . . . "
+        ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
+        echo -e "done"
+
 	SetUserCredentialsFor $lab
         read -p "Enter new Project name: " NEWLAB
         while [[ -d "$NEWLAB" ]]
@@ -462,11 +467,21 @@ function LabSAVE
 			newimgname=$newimgname-pntae
 		fi
 
-		echo -e "Creating new image $newimgname from $servername..." 
 
-		openstack $CLISUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
-		echo -e "Replacing $curimgname with $newimgname in $newstackfile"
-		sed -i "s/$curimgname/$newimgname/g" $newstackfile
+                if [[ " ${ImageArrayAvail[@]} " =~ " ${newimgname} " ]]
+                then
+                        echo -e "Image $newimgname already exists, skipping image . . . "
+                        echo -e "Replacing $curimgname with $curimgname-MODIFYTHIS in $newstackfile"
+                        sed -i "s/$curimgname/$curimgname-MODIFYTHIS/g" $newstackfile
+
+                else
+                        echo -ne "Image $newimgname does not exist, creating image . . . "
+			echo -e "Creating new image $newimgname from $servername..." 
+
+			openstack $CLISUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
+			echo -e "Replacing $curimgname with $newimgname in $newstackfile"
+			sed -i "s/$curimgname/$newimgname/g" $newstackfile
+		fi
 	done
 
 	echo -e "\nWaiting for 2 minutes for images to be active..."
@@ -952,11 +967,19 @@ do
 	##Avoid deleting common images
 	if [[ $image =~ "pntaecommon" ]]
 	then 
-		echo -e "Skipping image $image"
+		echo -e "Skipping image $image it is a template image"
 		continue
 	fi
         echo -e "Deleting image $image"
 	
+        ##Avoid deleting images used by other blueprints
+	grep -R --exclude-dir=$choice $image $BPSDIR
+	if [ $? -eq 0 ]
+	then
+		echo -e "Skipping image $image it is being used by other labs"
+		continue
+	fi
+
         openstack $CLISUFFIX image delete $image
 done
 echo -e "Deleting heat template for $choice"
