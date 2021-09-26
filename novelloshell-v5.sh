@@ -192,15 +192,17 @@ delete - Delete a lab
 
 toggle - Toggle boot sequence for a VM
 
-shell - Shell for a lab
 "
 
 if [ $ADMINUSER -eq 1 ]
 then
-echo -e "SAVE - Save the application as blueprint
+echo -e "SHELL - Open Stack shell for the lab
+
 EDIT - Edit the stack template of application 
        (need to run "UPDATE" for the changes to take effect)
 UPDATE - Update lab environment with current heat template
+
+SAVE - Save the application as blueprint
 "
 fi
 
@@ -303,8 +305,15 @@ case "$choice" in
 		DisplayScreen2
                 fi
 		;;
-	'shell')
-		LabShell
+	'SHELL')
+                if [ $ADMINUSER -eq 1 ]
+                then
+		LabSHELL
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+		DisplayScreen2
+                fi
 		;;
 	'SAVE')
                 if [ $ADMINUSER -eq 1 ]
@@ -1044,10 +1053,10 @@ fi
 PauseDisplayScreen1
 }
 
-function LabShell
+function LabSHELL
 {
 SetUserCredentialsFor $lab
-openstack
+openstack $CLISUFFIX
 DisplayScreen2
 }
 
