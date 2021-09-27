@@ -10,6 +10,11 @@ APPSDIR="/mnt/novello/TESTING/PROJECTS/APPS"
 # Directory tobe used for storing configuration of blueprints
 BPSDIR="/mnt/novello/TESTING/PROJECTS/BPS"
 
+# Directory for storing usage statistics
+STATSDIR="/mnt/NovelloShell/TESTING/PROJECTS/STATS"
+# Usage log file 
+LOGFILE="/mnt/NovelloShell/TESTING/STATS/novelloshell.log"
+
 # tag to be appended for the stack and images.
 # This is to indetify the resources on the infrastructorure being shared by multiple teams.
 TAG="my-team"

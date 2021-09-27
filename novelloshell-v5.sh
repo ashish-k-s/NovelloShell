@@ -40,6 +40,8 @@ ADMIN_PUBLISH_IMAGE_SCRIPT=$(grep ADMIN_PUBLISH_IMAGE_SCRIPT= $CONFIGFILE  | gre
 CLISUFFIX=$(grep CLISUFFIX= $CONFIGFILE  | grep -v ^#)
 CLUSTERNAME=$(grep CLUSTERNAME= $CONFIGFILE  | grep -v ^#)
 PROJECTID=$(grep PROJECTID= $CONFIGFILE  | grep -v ^#)
+MAXLABS=$(grep MAXLABS= $CONFIGFILE  | grep -v ^#)
+LOGFILE=$(grep LOGFILE= $CONFIGFILE  | grep -v ^#)
 
 
 eval $PUBLICNETWORK
@@ -56,6 +58,8 @@ eval $ADMINACCESS
 eval $DOMAIN
 eval $PROJECTID
 eval $CLUSTERNAME
+eval $MAXLABS
+eval $LOGFILE
 
 if [ -z "$CLUSTERNAME" ]
 then
@@ -143,6 +147,7 @@ function exec_admin_publish_image_script
 {
 #echo -e $ADMIN_PUBLISH_IMAGE_SCRIPT
 #echo -e $@
+WriteLog "exec_admin_publish_image_script"
 eval $ADMIN_PUBLISH_IMAGE_SCRIPT $@
 }
 
@@ -367,6 +372,7 @@ function PauseDisplayScreen2
 
 function StopLab
 {
+	WriteLog "StopLab $lab"
         SetUserCredentialsFor $lab
         echo -e "Suspending  $lab"
 	openstack $CLISUFFIX stack suspend $lab
@@ -376,6 +382,7 @@ function StopLab
 
 function StartLab
 {
+	WriteLog "StartLab $lab"
         SetUserCredentialsFor $lab
         echo -e "Starting  $lab"
 	openstack $CLISUFFIX stack resume $lab
@@ -609,6 +616,7 @@ function ToggleBoot
 
 function ExitNovelloShell
 {
+	WriteLog "ExitNovelloShell"
 	echo -e "Exiting NovelloShell"
 	exit
 }
@@ -687,6 +695,7 @@ function LaunchLabStack
         if [[ "$ADMINACCESS" == "no" ]]
 	then
 	exec_admin_usrrol_script create $lab
+	WriteLog "exec_admin_usrrol_script create $lab"
 	else
         ## FIXME: Required config option for usage of --domain --user-domain and --project-domain options below
 	openstack $CLISUFFIX project create $lab --domain $DOMAIN > /dev/null 2>&1
@@ -698,6 +707,7 @@ function LaunchLabStack
         fi
 
 	SetUserCredentialsFor $lab
+	WriteLog "Creating stack for $lab"
         openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
 
 	return
@@ -817,6 +827,7 @@ function UploadIMAGE
 			else
 			openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --file $ImageFile $ImageName
 			fi
+			WriteLog "UploadIMAGE $ImageFile"
 			echo -e "done"
 
 		fi
@@ -918,6 +929,7 @@ function CloneTemplate
 	then
 	chmod -R a+w $newbpname
 	echo -e "Successfully cloned $newbpname from $1!"
+	WriteLog "Successfully cloned $newbpname from $1!"
 	PauseDisplayScreen1
 	fi
 	fi
@@ -966,6 +978,7 @@ function LabBlueprintEDIT
 
 function LabDataDELETE
 {
+WriteLog "LabDataDELETE $choice"
 SetAdminCredentials
 stackfile="$BPSDIR/$choice/stack_user.yaml"
 OLDIFS=$(echo $IFS)
@@ -979,7 +992,6 @@ do
 		echo -e "Skipping image $image it is a template image"
 		continue
 	fi
-        echo -e "Deleting image $image"
 	
         ##Avoid deleting images used by other blueprints
 	grep -R --exclude-dir=$choice $image $BPSDIR
@@ -989,9 +1001,12 @@ do
 		continue
 	fi
 
+        echo -e "Deleting image $image"
+        WriteLog "Deleting image $image"
         openstack $CLISUFFIX image delete $image
 done
 echo -e "Deleting heat template for $choice"
+WriteLog "Deleting heat template for $choice"
 cmd="rm -rf $BPSDIR/$choice"
 eval $cmd
 if [ $? -ne 0 ]
@@ -1031,6 +1046,7 @@ then
 fi
 
 echo -e "Deleting $lab"
+WriteLog "Deleting $lab"
 SetUserCredentialsFor $lab
 openstack $CLISUFFIX stack delete $lab --wait --yes
 if [ $? -eq 0 ]
@@ -1060,5 +1076,14 @@ openstack $CLISUFFIX
 DisplayScreen2
 }
 
+function WriteLog
+{
+alias date="date +\"%a %b %d %T\""
+date=`date`
+header="${date} ${USERNAME} "
+echo -e $header$1 >> $LOGFILE
+}
+
+WriteLog "Logged in to NovelloShell"
 DisplayScreen1
  
