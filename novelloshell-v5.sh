@@ -42,6 +42,7 @@ CLUSTERNAME=$(grep CLUSTERNAME= $CONFIGFILE  | grep -v ^#)
 PROJECTID=$(grep PROJECTID= $CONFIGFILE  | grep -v ^#)
 MAXLABS=$(grep MAXLABS= $CONFIGFILE  | grep -v ^#)
 LOGFILE=$(grep LOGFILE= $CONFIGFILE  | grep -v ^#)
+STATSDIR=$(grep STATSDIR= $CONFIGFILE  | grep -v ^#)
 
 
 eval $PUBLICNETWORK
@@ -60,6 +61,10 @@ eval $PROJECTID
 eval $CLUSTERNAME
 eval $MAXLABS
 eval $LOGFILE
+eval $STATSDIR
+
+REPORTFILE="ns-usage-stats.csv"
+CSVSEP=";"
 
 if [ -z "$CLUSTERNAME" ]
 then
@@ -652,6 +657,10 @@ source $ADMINRC
 
 function LaunchLabStack
 {
+
+	CSVSTR=${USERNAME}
+	CSVSTR=${CSVSTR}${CSVSEP}${1}
+
 	lab=$USERNAME-$TAG-$1
 	SetAdminCredentials
 	appendno=0
@@ -709,6 +718,10 @@ function LaunchLabStack
 	SetUserCredentialsFor $lab
 	WriteLog "Creating stack for $lab"
         openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
+
+	CSVSTR=${CSVSTR}${CSVSEP}${lab}
+	CSVSTR=${CSVSTR}${CSVSEP}$(date)
+	echo -e $CSVSTR >> $STATSDIR/$REPORTFILE
 
 	return
 }
