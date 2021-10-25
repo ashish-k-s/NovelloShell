@@ -32,6 +32,7 @@ FAQURL=$(grep FAQURL $CONFIGFILE  | grep -v ^#)
 MOTD=$(grep MOTD $CONFIGFILE  | grep -v ^#)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE  | grep -v ^#)
 IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
+STARTUPSCRIPTSPATH=$(grep STARTUPSCRIPTSPATH $CONFIGFILE | grep -v ^#)
 ADMINACCESS=$(grep ADMINACCESS= $CONFIGFILE  | grep -v ^#)
 DOMAIN=$(grep DOMAIN= $CONFIGFILE  | grep -v ^#)
 ADMIN_USRROL_SCRIPT=$(grep ADMIN_USRROL_SCRIPT= $CONFIGFILE  | grep -v ^#)
@@ -54,6 +55,7 @@ eval $FAQURL
 eval $MOTD
 eval $ADMINUSERSFILE
 eval $IMAGEFILESPATH
+eval $STARTUPSCRIPTSPATH
 typeset -l ADMINACCESS
 eval $ADMINACCESS
 eval $DOMAIN
@@ -400,7 +402,10 @@ function StatusLab
 	SetUserCredentialsFor $lab
 	echo -e "Probing status of $lab"
 	openstack $CLISUFFIX stack list
+	echo -e "Probing for list of instances in $lab"
+	openstack $CLISUFFIX server list
 	echo -e "Probing lab access details..."
+        # Looking for 7 output values. Change the number if more output values are needed.
 	for n in {1..7}
 	do
 		openstack $CLISUFFIX stack output show $lab output_$n -c output_value -f value 2> /dev/null
@@ -941,6 +946,17 @@ function CloneTemplate
 	if [ $? -eq 0 ]
 	then
 	chmod -R a+w $newbpname
+        read -p "Would you like to clone the startup scripts as well? ([Y]/n): " yn
+        if [[ "$yn" =~ ^(N|n|No|no|NO)$ ]]
+        then 
+        echo -e "Not cloning startup scripts for the lab template. You need to create those later"
+        WriteLog "Not cloning startup scripts for the lab template. You need to create those later"
+        else 
+        echo -e "Cloning startup scripts for the lab template."
+        WriteLog "Cloning startup scripts for the lab template."
+        cp -r $STARTUPSCRIPTSPATH/$1 $STARTUPSCRIPTSPATH/$newbpname
+        chmod -R a+w $STARTUPSCRIPTSPATH/$newbpname
+        fi
 	echo -e "Successfully cloned $newbpname from $1!"
 	WriteLog "Successfully cloned $newbpname from $1!"
 	PauseDisplayScreen1
@@ -1021,6 +1037,14 @@ done
 echo -e "Deleting heat template for $choice"
 WriteLog "Deleting heat template for $choice"
 cmd="rm -rf $BPSDIR/$choice"
+eval $cmd
+if [ $? -ne 0 ]
+then
+	echo -e "FAILED"
+fi
+echo -e "Deleting startup scripts for $choice"
+WriteLog "Deleting startup scripts for $choice"
+cmd="rm -rf $STARTUPSCRIPTSPATH/$choice"
 eval $cmd
 if [ $? -ne 0 ]
 then
