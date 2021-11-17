@@ -165,7 +165,7 @@ function PrintMenuOptions1
 \t=================================================================================\n
 NovelloShell access on ${bold} $CLUSTERNAME : $accesstype ${normal}
 FAQs : $FAQURL
-${bold}$MOTD${normal} \n
+${bold}$(cat $MOTD)${normal} \n
 ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
@@ -969,7 +969,7 @@ function CloneTemplate
 
 function LabBlueprintCLONE
 {
-echo -e "This feature is still under development"
+	clear
         echo -e "Clone a new lab environment from existing template"
         echo -e "=================================================="
         cd $BPSDIR
@@ -1023,7 +1023,7 @@ do
 	fi
 	
         ##Avoid deleting images used by other blueprints
-	grep -R --exclude-dir=$choice $image $BPSDIR
+	grep -R --exclude-dir=$choice $image $BPSDIR > /dev/null 2>&1
 	if [ $? -eq 0 ]
 	then
 		echo -e "Skipping image $image it is being used by other labs"
@@ -1032,7 +1032,8 @@ do
 
         echo -e "Deleting image $image"
         WriteLog "Deleting image $image"
-        openstack $CLISUFFIX image delete $image
+        #openstack $CLISUFFIX image delete $image
+        openstack $CLISUFFIX image set --name $image-DELETE $image
 done
 echo -e "Deleting heat template for $choice"
 WriteLog "Deleting heat template for $choice"
