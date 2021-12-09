@@ -198,8 +198,8 @@ Lab environment activities:
 status - Show status of a lab
 console - Show console access details
 
-start - Start a lab
-stop - Stop a lab
+start - Start VMs in the lab
+stop - Stop VMs in the lab
 delete - Delete a lab
 
 toggle - Toggle boot sequence for a VM
@@ -290,10 +290,10 @@ function MenuOptionActions2
 read choice
 case "$choice" in
 	'start')
-		StartLab
+		StartLabVMs
 		;;
 	'stop')
-		StopLab
+		StopLabVMs
 		;;
 	'delete')
 		DeleteLab
@@ -377,24 +377,32 @@ function PauseDisplayScreen2
 	DisplayScreen2
 }
 
-function StopLab
+function StopLabVMs
 {
-	WriteLog "StopLab $lab"
+	WriteLog "StopLabVMs $lab"
         SetUserCredentialsFor $lab
-        echo -e "Suspending  $lab"
-	openstack $CLISUFFIX stack suspend $lab
-	echo -e "All the VMs of $lab will be suspended in some time"
+        echo -e "List of VMs in $lab"
+	openstack $CLISUFFIX server list -c 'Name' -f value -c 'Status' -f value
+	echo -e "Select VMs tobe stopped from above list (provide space seperated list)"
+	read line
+	arr=($line)
+	echo -e "Stopping ${#arr[@]} VM(s): ${arr[@]}"      
+	openstack $CLISUFFIX server stop ${arr[@]} > /dev/null 2>&1
 	PauseDisplayScreen2
 }
 
-function StartLab
+function StartLabVMs
 {
-	WriteLog "StartLab $lab"
+        WriteLog "StartLabVMs $lab"
         SetUserCredentialsFor $lab
-        echo -e "Starting  $lab"
-	openstack $CLISUFFIX stack resume $lab
-	echo -e "All the VMs of $lab will be resumed in some time"
-	PauseDisplayScreen2
+        echo -e "List of VMs in $lab"
+        openstack $CLISUFFIX server list -c 'Name' -f value -c 'Status' -f value
+        echo -e "Select VMs tobe stopped from above list (provide space seperated list)"
+        read line
+        arr=($line)
+        echo -e "Starting ${#arr[@]} VM(s): ${arr[@]}"
+        openstack $CLISUFFIX server start ${arr[@]} > /dev/null 2>&1
+        PauseDisplayScreen2
 }
 
 function StatusLab
@@ -725,7 +733,7 @@ function LaunchLabStack
         openstack $CLISUFFIX stack create -t $stackfile $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
 
 	CSVSTR=${CSVSTR}${CSVSEP}${lab}
-	CSVSTR=${CSVSTR}${CSVSEP}$(date)
+	CSVSTR=${CSVSTR}${CSVSEP}$(date +"%a %b %d %T %Y")
 	echo -e $CSVSTR >> $STATSDIR/$REPORTFILE
 
 	return
