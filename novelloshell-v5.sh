@@ -88,7 +88,7 @@ if [[ -x "$ADMIN_USRROL_SCRIPT" ]]
 then
 echo -e "NovelloShell will be using $ADMIN_USRROL_SCRIPT for user and role creation"
 else
-echo -e "File $ADMIN_USRROL_SCRIPT configured tobe used for user and role creation does not exist or it is not executable"
+echo -e "File $ADMIN_USRROL_SCRIPT configured to be used for user and role creation does not exist or it is not executable"
 exit 1
 fi
 
@@ -96,7 +96,7 @@ if [[ -x "$ADMIN_STACK_SCRIPT" ]]
 then
 echo -e "NovelloShell will be using $ADMIN_STACK_SCRIPT for listing of all stacks"
 else
-echo -e "File $ADMIN_STK_SCRIPT configured tobe used for listing of all stacks does not exist or it is not executable"
+echo -e "File $ADMIN_STK_SCRIPT configured to be used for listing of all stacks does not exist or it is not executable"
 exit 1
 fi
 
@@ -104,7 +104,7 @@ if [[ -x "$ADMIN_PUBLISH_IMAGE_SCRIPT" ]]
 then
 echo -e "NovelloShell will be using $ADMIN_PUBLISH_IMAGE_SCRIPT for publishing images"
 else
-echo -e "File $ADMIN_PUBLISH_IMAGE_SCRIPT configured tobe used for publishing image does not exist or it is not executable"
+echo -e "File $ADMIN_PUBLISH_IMAGE_SCRIPT configured to be used for publishing image does not exist or it is not executable"
 exit 1
 fi
 
@@ -170,7 +170,7 @@ ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
 new - Launch a new lab from blueprint
-list - List launched labs"
+list - List your launched labs"
 
 if [ $ADMINUSER -eq 1 ]
 then
@@ -383,7 +383,7 @@ function StopLabVMs
         SetUserCredentialsFor $lab
         echo -e "List of VMs in $lab"
 	openstack $CLISUFFIX server list -c 'Name' -f value -c 'Status' -f value
-	echo -e "Select VMs tobe stopped from above list (provide space seperated list)"
+	echo -e "Select VMs to be stopped from above list (provide space seperated list)"
 	read line
 	arr=($line)
 	echo -e "Stopping ${#arr[@]} VM(s): ${arr[@]}"      
@@ -397,7 +397,7 @@ function StartLabVMs
         SetUserCredentialsFor $lab
         echo -e "List of VMs in $lab"
         openstack $CLISUFFIX server list -c 'Name' -f value -c 'Status' -f value
-        echo -e "Select VMs tobe stopped from above list (provide space seperated list)"
+        echo -e "Select VMs to be started from above list (provide space seperated list)"
         read line
         arr=($line)
         echo -e "Starting ${#arr[@]} VM(s): ${arr[@]}"
@@ -411,7 +411,7 @@ function StatusLab
 	echo -e "Probing status of $lab"
 	openstack $CLISUFFIX stack list
 	echo -e "Probing for list of instances in $lab"
-	openstack $CLISUFFIX server list
+	openstack $CLISUFFIX server list -c Name -c Status -c Networks -c Image -c Flavor
 	echo -e "Probing lab access details..."
         # Looking for 7 output values. Change the number if more output values are needed.
 	for n in {1..7}
@@ -567,13 +567,32 @@ function LabUPDATE
 function ShowConsole
 {
         SetUserCredentialsFor $lab
-        echo -e "Probing console access details for $lab\n"
-	for vm in `openstack $CLISUFFIX server list -c Name -f value`
-	do
+        echo -e "Probing list of VMs in $lab . . ."
+        openstack $CLISUFFIX server list -c 'Name' -f value -c 'Status' -f value
+        echo -e "===^===^===^===^===^===^===^==="
+        echo -e "Select VMs from above list for which you need console access details (provide space seperated list)"
+	echo -e "You may copy-paste namae of the VM(s) from the above list"
+	echo -e "or\nPress Enter to see console access details of all the VMs in this lab"
+        read line
+	if [[ ! -z "$line" ]]
+	then
+        	arr=($line)
+	        echo -e "Probing console access links for selected VM(s)\n"      
+		for vm in "${arr[@]}"
+		do
+                echo -ne "$vm \t"
+		openstack $CLISUFFIX console url show $vm -c url -f value
+                echo -e "\n"
+		done
+	else
+        	echo -e "Probing console access details for $lab\n"
+		for vm in `openstack $CLISUFFIX server list -c Name -f value`
+		do
 		echo -ne "$vm \t"
 		openstack $CLISUFFIX console url show $vm -c url -f value
 		echo -e "\n"
-	done
+		done
+	fi
 	PauseDisplayScreen2
 }
 
@@ -854,6 +873,15 @@ function UploadIMAGE
 			openstack $CLISUFFIX image create --disk-format $ImageType --container-format bare --file $ImageFile $ImageName
 			fi
 			WriteLog "UploadIMAGE $ImageFile"
+			
+	                echo -e "\nSetting $image as public image"
+        	        if [ $ADMINACCESS == "no" ]
+                	then
+                        	exec_admin_publish_image_script $PROJECTID $ImageName
+	                else
+                	        openstack $CLISUFFIX image set --property visibility=public $ImageName
+        	        fi
+
 			echo -e "done"
 
 		fi
@@ -864,7 +892,7 @@ function UploadIMAGE
 function SelectLab
 {
 	echo -e "===^===^===^===^===^===^===^===^===^===^===^===^==="
-	echo -e "Select the name of lab environment from above list"
+	echo -e "Type the name of the lab you want to manage.\n(You may copy-paste namae of the lab from the above list)"
 	echo -e "Enter '<' to go back to previous menu or 'x' to exit"
 	bind 'set mark-directories off' > /dev/null 2>&1
 	choice=""
