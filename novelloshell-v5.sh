@@ -174,10 +174,15 @@ list - List your launched labs"
 
 if [ $ADMINUSER -eq 1 ]
 then
+echo -e ""
+echo -e "CONNECT - Connect to the other user's lab environment"
+echo -e "BECOME - Use NovelloShell as other user"
+echo -e ""
 echo -e "DELETE - Delete lab environment blueprint"
 echo -e "CLONE - Clone a new lab from existing lab environment template"
 echo -e "EDIT - Edit lab environment blueprint"
 echo -e "IMAGE - Upload images to Novello cluster"
+echo -e ""
 fi
 
 echo -ne "exit - Exit from NovelloShell
@@ -234,6 +239,26 @@ case "$choice" in
 	'list')
 		ListLabs
 		;;
+        'CONNECT')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintCONNECT
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
+        'BECOME')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                BecomeUser
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
 	'DELETE')
 		if [ $ADMINUSER -eq 1 ]
 		then
@@ -916,6 +941,34 @@ function SelectLab
 		ExitNovelloShell
 	fi
 	return
+}
+
+function LabBlueprintCONNECT
+{
+read -p "Provide name of the lab environment you wish to connect to: " lab
+echo -e "checking presence of $lab"
+SetAdminCredentials
+SetUserCredentialsFor $lab
+openstack $CLISUFFIX stack list -c 'Stack Name' | tr -d '|' | tr -d '[:blank:]' | grep ^$lab$
+if [ $? -ne 0 ]
+then
+        echo -e "Invalid lab"
+        PauseDisplayScreen1
+fi
+DisplayScreen2
+}
+
+function BecomeUser
+{
+read -p "Provide name of the user you wish to login as: " usr
+sudo su - $usr 2> /dev/null
+if [ $? -ne 0 ]
+then
+echo -e "Invalid user name"
+else
+echo -e "Exited from $usr's session"
+fi
+PauseDisplayScreen1
 }
 
 function LabBlueprintDELETE
