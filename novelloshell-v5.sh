@@ -170,7 +170,8 @@ ${bold}User:\t $USERNAME ${normal}\n
 Lab environment options:
 --------------------------
 new - Launch a new lab from blueprint
-list - List your launched labs"
+list - List your launched labs
+info - Read information about the lab environment template"
 
 if [ $ADMINUSER -eq 1 ]
 then
@@ -238,6 +239,9 @@ case "$choice" in
 		;;
 	'list')
 		ListLabs
+		;;
+	'info')
+		LabInfo
 		;;
         'CONNECT')
                 if [ $ADMINUSER -eq 1 ]
@@ -1161,6 +1165,33 @@ function NewLab
 	NewLab
 
 }
+
+function LabInfo
+{
+        clear
+        echo -e "Select a lab environment template to know additional information"
+        echo -e "================================================================"
+        cd $BPSDIR
+        ls
+        SelectLab
+        if [ -d $choice ]
+        then
+		if [ -f "$choice/README.md" ]
+		then 
+			less $choice/README.md
+	                PauseDisplayScreen1
+
+		else
+	                echo -e "README file does not exist for $choice"
+		fi
+                PauseDisplayScreen1
+        fi
+        echo -e "Ivalid option, hit Enter to try again"
+        read p
+        LabInfo
+
+}
+
 
 function DeleteLab
 {
