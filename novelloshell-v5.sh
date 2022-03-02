@@ -595,8 +595,8 @@ function ShowConsole
         echo -e "Probing list of VMs in $lab . . ."
         openstack $CLISUFFIX server list -c 'Name' -f value -c 'Status' -f value
         echo -e "===^===^===^===^===^===^===^==="
-        echo -e "Select VMs from above list for which you need console access details (provide space seperated list)"
-	echo -e "You may copy-paste namae of the VM(s) from the above list"
+        echo -e "Select VMs from above list for which you need console access details (provide space separated list)"
+	echo -e "You may copy-paste name of the VM(s) from the above list"
 	echo -e "or\nPress Enter to see console access details of all the VMs in this lab"
         read line
 	if [[ ! -z "$line" ]]
