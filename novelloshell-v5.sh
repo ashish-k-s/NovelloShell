@@ -171,12 +171,12 @@ Lab environment options:
 --------------------------
 new - Launch a new lab from blueprint
 list - List your launched labs
+connect - Connect to the lab environment
 info - Read information about the lab environment template"
 
 if [ $ADMINUSER -eq 1 ]
 then
 echo -e ""
-echo -e "CONNECT - Connect to the other user's lab environment"
 echo -e "BECOME - Use NovelloShell as other user"
 echo -e ""
 echo -e "DELETE - Delete lab environment blueprint"
@@ -221,6 +221,7 @@ EDIT - Edit the stack template of application
 UPDATE - Update lab environment with current heat template
 
 SAVE - Save the application as blueprint
+PUBLISH - Publish images within this project
 "
 fi
 
@@ -243,15 +244,8 @@ case "$choice" in
 	'info')
 		LabInfo
 		;;
-        'CONNECT')
-                if [ $ADMINUSER -eq 1 ]
-                then
-                LabBlueprintCONNECT
-                else
-                echo -e "Administrative rights required for this function\nHit enter to continue"
-                read p
-                DisplayScreen1
-                fi
+        'connect')
+                LabBlueprintConnect
                 ;;
         'BECOME')
                 if [ $ADMINUSER -eq 1 ]
@@ -376,6 +370,16 @@ case "$choice" in
 		DisplayScreen2
                 fi
 		;;
+        'PUBLISH')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabImagePUBLISH
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen2
+                fi
+                ;;
 	'back')
 		DisplayScreen1
 		;;
@@ -590,6 +594,30 @@ function LabUPDATE
         echo -e "Updating lab environment $lab"
 	labdir="${APPSDIR}/${lab}"
         openstack $CLISUFFIX stack update -t $labdir/stack_user.yaml $lab --parameter project_name=$lab --parameter public_net_id=$PUBLICNETWORK --parameter project_guid=$USERNAME
+	PauseDisplayScreen2
+}
+
+function LabImagePUBLISH
+{
+
+	echo -e "\nListing images available for publishing..."
+        SetUserCredentialsFor $lab
+	openstack $CLISUFFIX image list --shared -c Name -f value
+	echo -e "please wait..."
+	openstack $CLISUFFIX image list --private -c Name -f value
+	read -p "Select (copy-paste) name of the image to be published (one at a time): " image
+	if [ -z "$image" ]
+	then
+		echo -e "No image selected"
+		PauseDisplayScreen2
+	fi
+	echo -e "\nSetting $image as public image..."
+        if [ $ADMINACCESS == "no" ]
+        then
+                exec_admin_publish_image_script $PROJECTID $image
+        else
+                openstack $CLISUFFIX image set --property visibility=public $image
+        fi
 	PauseDisplayScreen2
 }
 
@@ -947,9 +975,18 @@ function SelectLab
 	return
 }
 
-function LabBlueprintCONNECT
+function LabBlueprintConnect
 {
 read -p "Provide name of the lab environment you wish to connect to: " lab
+if [ $ADMINUSER -ne 1 ]
+then
+	labusername=$(echo $lab | awk -F '-' '{print $1}')
+	if [[ "$USERNAME" != "$labusername" ]]
+	then
+		echo "You may connect to the labs belonging to you"
+		PauseDisplayScreen1
+	fi
+fi
 echo -e "checking presence of $lab"
 SetAdminCredentials
 SetUserCredentialsFor $lab
