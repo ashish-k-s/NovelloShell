@@ -182,7 +182,7 @@ echo -e ""
 echo -e "DELETE - Delete lab environment blueprint"
 echo -e "CLONE - Clone a new lab from existing lab environment template"
 echo -e "EDIT - Edit lab environment blueprint"
-echo -e "IMAGE - Upload images to Novello cluster"
+echo -e "IMAGE - Manage images on Novello cluster"
 echo -e ""
 fi
 
@@ -229,6 +229,27 @@ echo -ne "back - Go back to previous menu
 exit - Exit from NovelloShell
 
 Enter your choice: " 
+}
+
+function PrintImageOptions
+{
+        clear
+        echo -ne "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
+\t=================================================================================\n
+NovelloShell access on ${bold} $CLUSTERNAME : $accesstype ${normal}
+${bold}User:\t $USERNAME ${normal}\n
+Image management options:
+------------------------
+Upload - Upload image(s) to Novello cluster
+Delete - Delete image from Novello cluster (just mark for deletion, can be retrieved)
+Purge - Purge the image(s) marked for deletion (permanent delete, no recovery possible)
+Retrieve - Retrieve deleted image from Novello cluster
+Show - Show details of image
+
+back - Go back to previous menu
+exit - Exit from NovelloShell
+
+Enter your choice: "
 }
 
 function MenuOptionActions1
@@ -290,7 +311,7 @@ case "$choice" in
         'IMAGE')
                 if [ $ADMINUSER -eq 1 ]
                 then
-                UploadIMAGE
+                DisplayImageScreen
                 else
                 echo -e "Administrative rights required for this function\nHit enter to continue"
                 read p
@@ -394,6 +415,39 @@ case "$choice" in
 esac
 }
 
+function MenuImageActions
+{
+read choice
+case "$choice" in
+        'Upload')
+                UploadIMAGE
+                ;;
+        'Delete')
+                DeleteIMAGE
+                ;;
+        'Purge')
+                PurgeIMAGE
+                ;;
+        'Retrieve')
+                RetrieveIMAGE
+                ;;
+        'Show')
+                ShowIMAGE
+                ;;
+        'back')
+                DisplayScreen1
+                ;;
+        'exit')
+                ExitNovelloShell
+                ;;
+        *)
+                echo -e "Invalid option, hit Enter to try again."
+                read p
+                DisplayImageScreen
+                ;;
+esac
+}
+
 function PauseDisplayScreen1
 {
 
@@ -408,6 +462,14 @@ function PauseDisplayScreen2
 	echo -e "Hit Enter to continue.."
 	read p
 	DisplayScreen2
+}
+
+function PauseDisplayImageScreen
+{
+
+        echo -e "Hit Enter to continue.."
+        read p
+        DisplayImageScreen
 }
 
 function StopLabVMs
@@ -466,7 +528,7 @@ function LabEDIT
 function LabSAVE
 {
 	SetAdminCredentials
-        echo -ne "\nGettng list of available images . . . "
+        echo -ne "\nGetting list of available images . . . "
         ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
         echo -e "done"
 
@@ -727,6 +789,12 @@ function DisplayScreen2
 	MenuOptionActions2
 }
 
+function DisplayImageScreen
+{
+        PrintImageOptions
+        MenuImageActions
+}
+
 function SetUserCredentialsFor
 {
 	lab=$1
@@ -860,7 +928,7 @@ function SelectImage
 	ImageArrayReq=("${choice[@]}")
         if [[ $choice == '<' ]]
         then
-                DisplayScreen1
+                DisplayImageScreen
         fi
         if [[ $choice == 'x' ]]
         then
@@ -898,7 +966,7 @@ function UploadIMAGE
         ls
         SelectImage
 	SetAdminCredentials
-	echo -ne "\nGettng list of available images . . . "
+	echo -ne "\nGetting list of available images . . . "
 	ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
 	echo -e "done"
 	###echo -e ${ImageArrayReq[@]}
@@ -943,7 +1011,83 @@ function UploadIMAGE
 
 		fi
 	done
-	PauseDisplayScreen1
+	PauseDisplayImageScreen
+}
+
+function DeleteIMAGE
+{
+read -p "Provide name of the image tobe deleted: " ImageName
+if [[ "$ImageName" == *"DELETE"* ]]; then
+	echo -e "Image is already marked for deletion"
+	PauseDisplayImageScreen
+fi
+echo -e "Marking $ImageName for deletion"
+ImageNameDel=$USERNAME-$ImageName-DELETE-$RANDOM
+echo -ne "Setting $ImageName as $ImageNameDel for deletion..."
+openstack $CLISUFFIX image set --name $ImageNameDel $ImageName
+echo -e "done"
+PauseDisplayImageScreen
+}
+
+function PurgeIMAGE
+{
+read -p "Provide name of the image tobe purged: " ImageName
+if [[ "$ImageName" == *"DELETE"* ]]; then
+        read -p "$ImageName will be deleted permanently and it can not be retrieved.\nAre you sure you want to proceed? (YES/[NO]): " decision
+	if [[ $decision != "YES" ]]
+	then
+        	PauseDisplayImageScreen
+	else
+		echo -ne "Permanently deleting $ImageName..."
+		openstack $CLISUFFIX image delete $ImageName
+		echo -e "done"
+	fi
+        PauseDisplayImageScreen
+fi
+echo -e "Can not purge $ImageName. The image to be purged needs to be marked for deletion first."
+echo -e "Please wait..."
+openstack $CLISUFFIX image list -c Name -f value | grep $ImageName | grep DELETE
+echo -e "You may wish to purge any of the above"
+PauseDisplayImageScreen
+}
+
+function RetrieveIMAGE
+{
+read -p "Provide name of the image to be retrieved: " ImageName
+
+if [[ "$ImageName" != *"DELETE"* ]] 
+then
+	echo -e "Can not retrieve $ImageName. Image marked for deletion can only be retrieved"
+	echo -e "Please wait..."
+	openstack $CLISUFFIX image list -c Name -f value | grep $ImageName | grep DELETE
+	echo -e "You may wish to retrieve any of the above"
+	PauseDisplayImageScreen
+fi
+
+SetAdminCredentials
+echo -ne "\nGetting list of available images . . . "
+ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
+echo -e "done"
+
+ImageNameRetrieve=$(echo $ImageName | cut -d- -f2- | rev | cut -d- -f3- | rev)
+
+if [[ " ${ImageArrayAvail[@]} " =~ " ${ImageNameRetrieve} " ]]
+then
+        echo -e "$ImageName can not be retrieved as image with name $ImageNameRetrieve already exists"
+	PauseDisplayImageScreen
+else
+	echo -ne "Setting $ImageName as $ImageNameRetrieve..."
+	openstack $CLISUFFIX image set --name $ImageNameRetrieve $ImageName
+	echo -e "done"
+fi
+PauseDisplayImageScreen
+}
+
+function ShowIMAGE
+{
+read -p "Provide name of the image whose details are to be displayed: " ImageName
+openstack image show $ImageName | less
+PauseDisplayImageScreen
 }
 
 function SelectLab
