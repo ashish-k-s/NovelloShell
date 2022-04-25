@@ -242,7 +242,7 @@ Image management options:
 ------------------------
 Upload - Upload image(s) to Novello cluster
 Delete - Delete image from Novello cluster (just mark for deletion, can be retrieved)
-Purge - Purge the image(s) marked for deletion (permanent delete, no recovery possible)
+Purge - Purge the image marked for deletion (permanent delete, no recovery possible)
 Retrieve - Retrieve deleted image from Novello cluster
 Show - Show details of image
 
@@ -1018,6 +1018,10 @@ function DeleteIMAGE
 {
 SetAdminCredentials
 read -p "Provide name of the image tobe deleted: " ImageName
+if [[ "$ImageName" != *"$TAG"* ]]; then
+	echo -e "Image belonging to $TAG can only be deleted"
+	PauseDisplayImageScreen
+fi
 if [[ "$ImageName" == *"DELETE"* ]]; then
 	echo -e "Image is already marked for deletion"
 	PauseDisplayImageScreen
@@ -1034,6 +1038,12 @@ function PurgeIMAGE
 {
 SetAdminCredentials
 read -p "Provide name of the image tobe purged: " ImageName
+
+if [[ "$ImageName" != *"$TAG"* ]]; then
+        echo -e "Image belonging to $TAG can only be purged"
+        PauseDisplayImageScreen
+fi
+
 if [[ "$ImageName" == *"DELETE"* ]]; then
         read -p "$ImageName will be deleted permanently and it can not be retrieved.\nAre you sure you want to proceed? (YES/[NO]): " decision
 	if [[ $decision != "YES" ]]
