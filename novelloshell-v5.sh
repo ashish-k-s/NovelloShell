@@ -1016,6 +1016,7 @@ function UploadIMAGE
 
 function DeleteIMAGE
 {
+SetAdminCredentials
 read -p "Provide name of the image tobe deleted: " ImageName
 if [[ "$ImageName" == *"DELETE"* ]]; then
 	echo -e "Image is already marked for deletion"
@@ -1031,6 +1032,7 @@ PauseDisplayImageScreen
 
 function PurgeIMAGE
 {
+SetAdminCredentials
 read -p "Provide name of the image tobe purged: " ImageName
 if [[ "$ImageName" == *"DELETE"* ]]; then
         read -p "$ImageName will be deleted permanently and it can not be retrieved.\nAre you sure you want to proceed? (YES/[NO]): " decision
@@ -1053,6 +1055,7 @@ PauseDisplayImageScreen
 
 function RetrieveIMAGE
 {
+SetAdminCredentials
 read -p "Provide name of the image to be retrieved: " ImageName
 
 if [[ "$ImageName" != *"DELETE"* ]] 
@@ -1064,7 +1067,6 @@ then
 	PauseDisplayImageScreen
 fi
 
-SetAdminCredentials
 echo -ne "\nGetting list of available images . . . "
 ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
 echo -e "done"
@@ -1085,6 +1087,7 @@ PauseDisplayImageScreen
 
 function ShowIMAGE
 {
+SetAdminCredentials
 read -p "Provide name of the image whose details are to be displayed: " ImageName
 openstack image show $ImageName | less
 PauseDisplayImageScreen
