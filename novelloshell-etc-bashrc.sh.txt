@@ -1,0 +1,47 @@
+## Append below code in /etc/bashrc file of the system hosting NovelloShell ##
+
+
+####### For NovelloShell #######
+function checkcmd
+{
+valid_cmds="ls ll cd ll vi cat mkdir cp mv echo "
+valid_writing_cmds="vi mkdir cp mv "
+
+if [[ $PWD != *"$VALIDDIR"* ]]
+then
+        echo -e "Invalid directory usage, exiting..."
+        exit
+fi
+
+cmd=$(echo $BASH_COMMAND | cut -f 1 -d ' ')
+arg=$(echo $BASH_COMMAND | cut -f 2- -d ' ')
+
+if [[ "$BASH_COMMAND" != @(*"printf"*|*"PATH"*) ]]
+then
+        if [[ $cmd != *"bash"* ]]
+        then
+                if [[ "$valid_cmds" != *"$cmd "* ]]
+                then
+                        echo -e "Invalid command usage, exiting..."
+                        exit
+                fi
+                if [[ "$valid_writing_cmds" == *"$cmd "* ]]
+                then
+                        if [[ $arg == *".."* ]]
+                        then
+                                echo -e "You can not access parent directory with the command writing to disk, exiting..."
+                                exit
+                        fi
+                fi
+        fi
+else
+echo -e ""
+fi
+}
+
+if [[ "$NOVELLO" == "yes" ]]
+then
+        trap 'checkcmd  $VALIDDIR' debug
+fi
+
+

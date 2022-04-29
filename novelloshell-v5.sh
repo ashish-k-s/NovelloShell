@@ -183,6 +183,7 @@ echo -e "DELETE - Delete lab environment blueprint"
 echo -e "CLONE - Clone a new lab from existing lab environment template"
 echo -e "EDIT - Edit lab environment blueprint"
 echo -e "IMAGE - Manage images on Novello cluster"
+echo -e "STARTUP - Edit startup scripts for the lab"
 echo -e ""
 fi
 
@@ -312,6 +313,16 @@ case "$choice" in
                 if [ $ADMINUSER -eq 1 ]
                 then
                 DisplayImageScreen
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
+        'STARTUP')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintSTARTUP
                 else
                 echo -e "Administrative rights required for this function\nHit enter to continue"
                 read p
@@ -1270,6 +1281,29 @@ function LabBlueprintCLONE
         echo -e "Ivalid option, hit Enter to try again"
         read p
         LabBlueprintCLONE
+
+}
+
+function LabBlueprintSTARTUP
+{
+        clear
+        echo -e "CAUTION: This may break the lab environment, make sure you know what you are doing\n"
+        echo -e "Edit startup scripts for the lab environment"
+        echo -e "============================================"
+        cd $BPSDIR
+        ls
+        SelectLab
+        if [ -d $choice ]
+        then
+                export VALIDDIR="$STARTUPSCRIPTSPATH/$choice"
+		cd $VALIDDIR
+		export PS1="[NOVELLOSHELL \W]\$ "
+		NOVELLO=yes bash
+                PauseDisplayScreen1
+        fi
+        echo -e "Ivalid option, hit Enter to try again"
+        read p
+        LabBlueprintEDIT
 
 }
 
