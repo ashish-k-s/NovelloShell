@@ -179,11 +179,8 @@ then
 echo -e ""
 echo -e "BECOME - Use NovelloShell as other user"
 echo -e ""
-echo -e "DELETE - Delete lab environment blueprint"
-echo -e "CLONE - Clone a new lab from existing lab environment template"
-echo -e "EDIT - Edit lab environment blueprint"
+echo -e "BLUEPRINT - Manage blueprints on Novello cluster"
 echo -e "IMAGE - Manage images on Novello cluster"
-echo -e "STARTUP - Edit startup scripts for the lab"
 echo -e ""
 fi
 
@@ -232,6 +229,29 @@ exit - Exit from NovelloShell
 Enter your choice: " 
 }
 
+function PrintBlueprintOptions
+{
+        clear
+        echo -e "\tNovelloShell - Shell based tool for Ravello like functionality on OpenStack cloud
+\t=================================================================================\n
+NovelloShell access on ${bold} $CLUSTERNAME : $accesstype ${normal}
+${bold}User:\t $USERNAME ${normal}\n
+Blueprint management options:
+-----------------------------"
+echo -ne "CLONE - Clone a new lab from existing lab environment template
+EDIT - Edit lab environment blueprint
+RENAME - Rename an existing lab environment
+DELETE - Delete lab environment blueprint
+
+STARTUP - Edit startup scripts for the lab
+
+back - Go back to previous menu
+exit - Exit from NovelloShell
+
+Enter your choice: "
+
+}
+
 function PrintImageOptions
 {
         clear
@@ -240,8 +260,8 @@ function PrintImageOptions
 NovelloShell access on ${bold} $CLUSTERNAME : $accesstype ${normal}
 ${bold}User:\t $USERNAME ${normal}\n
 Image management options:
-------------------------
-Upload - Upload image(s) to Novello cluster
+------------------------"
+echo -ne "\nUpload - Upload image(s) to Novello cluster
 Delete - Delete image from Novello cluster (just mark for deletion, can be retrieved)
 Purge - Purge the image marked for deletion (permanent delete, no recovery possible)
 Retrieve - Retrieve deleted image from Novello cluster
@@ -279,30 +299,10 @@ case "$choice" in
                 DisplayScreen1
                 fi
                 ;;
-	'DELETE')
-		if [ $ADMINUSER -eq 1 ]
-		then
-		LabBlueprintDELETE
-		else 
-		echo -e "Administrative rights required for this function\nHit enter to continue"
-		read p
-		DisplayScreen1
-		fi
-		;;
-        'CLONE')
+        'BLUEPRINT')
                 if [ $ADMINUSER -eq 1 ]
                 then
-                LabBlueprintCLONE
-                else
-                echo -e "Administrative rights required for this function\nHit enter to continue"
-                read p
-                DisplayScreen1
-                fi
-                ;;
-        'EDIT')
-                if [ $ADMINUSER -eq 1 ]
-                then
-                LabBlueprintEDIT
+                DisplayBlueprintScreen
                 else
                 echo -e "Administrative rights required for this function\nHit enter to continue"
                 read p
@@ -319,6 +319,72 @@ case "$choice" in
                 DisplayScreen1
                 fi
                 ;;
+	'exit')
+		ExitNovelloShell
+		;;
+	*) 
+		echo -e "Invalid option, hit Enter to try again."
+		read p
+		DisplayScreen1
+		;;
+esac
+}
+
+function MenuBlueprintActions
+{
+read choice
+case "$choice" in
+        'BLUEPRINT')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                DisplayBlueprintScreen
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
+        'DELETE')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintDELETE
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
+        'CLONE')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintCLONE
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
+        'RENAME')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintRENAME
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
+
+        'EDIT')
+                if [ $ADMINUSER -eq 1 ]
+                then
+                LabBlueprintEDIT
+                else
+                echo -e "Administrative rights required for this function\nHit enter to continue"
+                read p
+                DisplayScreen1
+                fi
+                ;;
         'STARTUP')
                 if [ $ADMINUSER -eq 1 ]
                 then
@@ -329,14 +395,19 @@ case "$choice" in
                 DisplayScreen1
                 fi
                 ;;
-	'exit')
-		ExitNovelloShell
-		;;
-	*) 
-		echo -e "Invalid option, hit Enter to try again."
-		read p
-		DisplayScreen1
-		;;
+
+
+        'back')
+                DisplayScreen1
+                ;;
+        'exit')
+                ExitNovelloShell
+                ;;
+        *)
+                echo -e "Invalid option, hit Enter to try again."
+                read p
+                DisplayBlueprintScreen
+                ;;
 esac
 }
 
@@ -481,6 +552,14 @@ function PauseDisplayImageScreen
         echo -e "Hit Enter to continue.."
         read p
         DisplayImageScreen
+}
+
+function PauseDisplayBlueprintScreen
+{
+
+        echo -e "Hit Enter to continue.."
+        read p
+        DisplayBlueprintScreen
 }
 
 function StopLabVMs
@@ -799,6 +878,13 @@ function DisplayScreen2
 	PrintMenuOptions2
 	MenuOptionActions2
 }
+
+function DisplayBlueprintScreen
+{
+        PrintBlueprintOptions
+        MenuBlueprintActions
+}
+
 
 function DisplayImageScreen
 {
@@ -1193,14 +1279,14 @@ function LabBlueprintDELETE
 		if [[ $choice == *"template"*  ]]
 		then
 			echo -e "Template blueprints cannot be deleted. Contact NovelloShell administrator if you still wish to delete this"
-			PauseDisplayScreen1
+			PauseDisplayBlueprintScreen
 		fi
 		echo -e "Are you sure you want to delete the lab environment blueprint $choice ? (YES|NO)"
 		read confirm
 		if [[ $confirm != 'YES' ]]
 		then
 		        echo -e "Not deleting the lab environment blueprint"
-		        PauseDisplayScreen1
+		        PauseDisplayBlueprintScreen
 		fi
 
 		echo -e "All associated images may be permanently deleted. Do you want to proceed? (YES|NO)"
@@ -1208,12 +1294,12 @@ function LabBlueprintDELETE
 		if [[ $confirm != 'YES' ]]
 		then
 		        echo -e "Not deleting the lab environment blueprint"
-		        PauseDisplayScreen1
+		        PauseDisplayBlueprintScreen
 		fi
 		
 		echo -e "Deleting the lab environment blueprint: $choice"
 		LabDataDELETE $choice
-		PauseDisplayScreen1
+		PauseDisplayBlueprintScreen
 	fi
 	echo -e "Ivalid option, hit Enter to try again"
 	read p
@@ -1225,7 +1311,7 @@ function CloneTemplate
 	if [[ $1 != *"template"* ]]
 	then
 	echo -e "Only template blueprints can be cloned"
-	PauseDisplayScreen1
+	PauseDisplayBlueprintScreen
 	fi
 	echo -e "Creating new template from $1"
 	echo -ne "Enter the name of the new blueprint: "
@@ -1234,16 +1320,16 @@ function CloneTemplate
         then
                 echo -e "Blueprint $newbpname already exists!"
                 echo -e "Consider editing existing blueprint or create clone with different name."
-                PauseDisplayScreen1
+                PauseDisplayBlueprintScreen
         fi
 	cp -r $1 $newbpname
-	chmod -R a+w $newbpname
+	chmod -R a+rwx $newbpname
 	if [ $? -eq 0 ]
 	then
 	sed -i "s|$1|$newbpname|g" $newbpname/stack_user.yaml
 	if [ $? -eq 0 ]
 	then
-	chmod -R a+w $newbpname
+	chmod -R a+rw $newbpname/stack_user.yaml
         read -p "Would you like to clone the startup scripts as well? ([Y]/n): " yn
         if [[ "$yn" =~ ^(N|n|No|no|NO)$ ]]
         then 
@@ -1253,7 +1339,7 @@ function CloneTemplate
         echo -e "Cloning startup scripts for the lab template."
         WriteLog "Cloning startup scripts for the lab template."
         cp -r $STARTUPSCRIPTSPATH/$1 $STARTUPSCRIPTSPATH/$newbpname
-        chmod -R a+w $STARTUPSCRIPTSPATH/$newbpname
+        chmod -R a+rwx $STARTUPSCRIPTSPATH/$newbpname
         fi
 	echo -e "Successfully cloned $newbpname from $1!"
 	WriteLog "Successfully cloned $newbpname from $1!"
@@ -1262,7 +1348,7 @@ function CloneTemplate
 	fi
 	echo -e "Something went wrong while cloning $newbpname from $1!"
 	echo -e "Review $newbpname before using it"
-	PauseDisplayScreen1
+	PauseDisplayBlueprintScreen
 }
 
 function LabBlueprintCLONE
@@ -1276,11 +1362,80 @@ function LabBlueprintCLONE
         if [ -d $choice ]
         then
                 CloneTemplate $choice
-		PauseDisplayScreen1
+		PauseDisplayBlueprintScreen
         fi
         echo -e "Ivalid option, hit Enter to try again"
         read p
         LabBlueprintCLONE
+
+}
+
+
+function RenameLab
+{
+if [[ $1 == *"template"* ]]
+then
+	echo -e "You can not rename the template blueprints"
+	PauseDisplayBlueprintScreen
+fi
+echo -e "Renaming lab environment blueprint $1"
+echo -ne "Enter the name of the new lab environment blueprint: "
+read newbpname
+if [ -d $newbpname ]
+then
+	echo -e "Blueprint $newbpname already exists!"
+	echo -e "Consider editing existing lab blueprint or rename the lab with different name."
+	PauseDisplayBlueprintScreen
+fi
+mv $1 $newbpname
+chmod -R a+rwx $newbpname
+if [ $? -eq 0 ]
+then
+	sed -i "s|$1|$newbpname|g" $newbpname/stack_user.yaml
+	if [ $? -eq 0 ]
+	then
+		chmod -R a+rw $newbpname/stack_user.yaml
+		if [ -d $STARTUPSCRIPTSPATH/$1 ]
+		then
+			echo -e "Renaming startup scripts directory for the lab template."
+			WriteLog "Renaming startup scripts directory for the lab template."
+			mv $STARTUPSCRIPTSPATH/$1 $STARTUPSCRIPTSPATH/$newbpname
+			chmod -R a+rwx $STARTUPSCRIPTSPATH/$newbpname
+		else
+			echo -e "Startup scripts directory does not exist for the lab"
+			WriteLog "Startup scripts directory does not exist for the lab"
+		fi
+	else
+		echo -e "Error renaming name of the blueprint in the heat template, review the new blueprint before proceeding."
+		WeiteLog "Error renaming name of the blueprint in the heat template, review the new blueprint before proceeding."
+	fi
+	echo -e "Successfully renamed $1 to $newbpname!"
+	WriteLog "Successfully rendmaed $1 to $newbpname!"
+	PauseDisplayBlueprintScreen
+else
+	echo -e "Something went wrong while renaming from $1 to $newbpname!"
+	WriteLog "Something went wrong while renaming from $1 to $newbpname!"
+	echo -e "Review $newbpname before using it"
+fi
+PauseDisplayBlueprintScreen
+}
+
+function LabBlueprintRENAME
+{
+        clear
+        echo -e "Rename an existing lab environment to the new name"
+        echo -e "=================================================="
+        cd $BPSDIR
+        ls
+        SelectLab
+        if [ -d $choice ]
+        then
+                RenameLab $choice
+                PauseDisplayScreen1
+        fi
+        echo -e "Ivalid option, hit Enter to try again"
+        read p
+        LabBlueprintRENAME
 
 }
 
@@ -1299,7 +1454,7 @@ function LabBlueprintSTARTUP
 		cd $VALIDDIR
 		export PS1="[NOVELLOSHELL \W]\$ "
 		NOVELLO=yes bash
-                PauseDisplayScreen1
+		PauseDisplayBlueprintScreen
         fi
         echo -e "Ivalid option, hit Enter to try again"
         read p
@@ -1319,7 +1474,7 @@ function LabBlueprintEDIT
         if [ -d $choice ]
         then
                 vi $choice/stack_user.yaml
-                DisplayScreen1
+                DisplayBlueprintScreen
         fi
         echo -e "Ivalid option, hit Enter to try again"
         read p
@@ -1351,10 +1506,11 @@ do
 		continue
 	fi
 
-        echo -e "Deleting image $image"
-        WriteLog "Deleting image $image"
-        #openstack $CLISUFFIX image delete $image
-        openstack $CLISUFFIX image set --name $image-DELETE $image
+	echo -e "Marking $image for deletion"
+	WriteLog "Marking $image for deletion"
+	ImageNameDel=$USERNAME-$image-DELETE-$RANDOM
+	echo -ne "Setting $image as $ImageNameDel for deletion..."
+	openstack $CLISUFFIX image set --name $ImageNameDel $image
 done
 echo -e "Deleting heat template for $choice"
 WriteLog "Deleting heat template for $choice"
