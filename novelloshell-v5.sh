@@ -1343,7 +1343,7 @@ function CloneTemplate
         fi
 	echo -e "Successfully cloned $newbpname from $1!"
 	WriteLog "Successfully cloned $newbpname from $1!"
-	PauseDisplayScreen1
+	PauseDisplayBlueprintScreen
 	fi
 	fi
 	echo -e "Something went wrong while cloning $newbpname from $1!"
