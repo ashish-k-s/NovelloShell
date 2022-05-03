@@ -1,7 +1,6 @@
-## Append below code in /etc/bashrc file of the system hosting NovelloShell ##
-
-
 ####### For NovelloShell #######
+## source this file in /etc/bashrc file of the system hosting NovelloShell ##
+
 function checkcmd
 {
 valid_cmds="ls ll cd ll vi cat mkdir cp mv echo "
