@@ -1458,8 +1458,7 @@ function LabBlueprintSTARTUP
         fi
         echo -e "Ivalid option, hit Enter to try again"
         read p
-        LabBlueprintEDIT
-
+        LabBlueprintSTARTUP
 }
 
 function LabBlueprintEDIT
