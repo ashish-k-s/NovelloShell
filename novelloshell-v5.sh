@@ -33,6 +33,7 @@ MOTD=$(grep MOTD $CONFIGFILE  | grep -v ^#)
 ADMINUSERSFILE=$(grep ADMINUSERSFILE $CONFIGFILE  | grep -v ^#)
 IMAGEFILESPATH=$(grep IMAGEFILESPATH $CONFIGFILE | grep -v ^#)
 STARTUPSCRIPTSPATH=$(grep STARTUPSCRIPTSPATH $CONFIGFILE | grep -v ^#)
+WEBURL=$(grep WEBURL $CONFIGFILE | grep -v ^#)
 ADMINACCESS=$(grep ADMINACCESS= $CONFIGFILE  | grep -v ^#)
 DOMAIN=$(grep DOMAIN= $CONFIGFILE  | grep -v ^#)
 ADMIN_USRROL_SCRIPT=$(grep ADMIN_USRROL_SCRIPT= $CONFIGFILE  | grep -v ^#)
@@ -44,6 +45,7 @@ PROJECTID=$(grep PROJECTID= $CONFIGFILE  | grep -v ^#)
 MAXLABS=$(grep MAXLABS= $CONFIGFILE  | grep -v ^#)
 LOGFILE=$(grep LOGFILE= $CONFIGFILE  | grep -v ^#)
 STATSDIR=$(grep STATSDIR= $CONFIGFILE  | grep -v ^#)
+KEYFILEPATH=$(grep KEYFILEPATH= $CONFIGFILE  | grep -v ^#)
 
 
 eval $PUBLICNETWORK
@@ -56,6 +58,7 @@ eval $MOTD
 eval $ADMINUSERSFILE
 eval $IMAGEFILESPATH
 eval $STARTUPSCRIPTSPATH
+eval $WEBURL
 typeset -l ADMINACCESS
 eval $ADMINACCESS
 eval $DOMAIN
@@ -64,6 +67,7 @@ eval $CLUSTERNAME
 eval $MAXLABS
 eval $LOGFILE
 eval $STATSDIR
+eval $KEYFILEPATH
 
 REPORTFILE="ns-usage-stats.csv"
 CSVSEP=";"
@@ -631,7 +635,7 @@ function LabSAVE
         done
 	if [[ $NEWLAB == "" ]]
 	then
-		PauseDisplayScreen2
+		PauseDisplayBlueprintScreen
 	fi
 	#mkdir $NEWLAB
 
@@ -1330,19 +1334,54 @@ function CloneTemplate
 	if [ $? -eq 0 ]
 	then
 	chmod -R a+rw $newbpname/stack_user.yaml
-        read -p "Would you like to clone the startup scripts as well? ([Y]/n): " yn
-        if [[ "$yn" =~ ^(N|n|No|no|NO)$ ]]
-        then 
-        echo -e "Not cloning startup scripts for the lab template. You need to create those later"
-        WriteLog "Not cloning startup scripts for the lab template. You need to create those later"
-        else 
+        #read -p "Would you like to clone the startup scripts as well? ([Y]/n): " yn
+        #if [[ "$yn" =~ ^(N|n|No|no|NO)$ ]]
+        #then 
+        #echo -e "Not cloning startup scripts for the lab template. You need to create those later"
+        #WriteLog "Not cloning startup scripts for the lab template. You need to create those later"
+        #else 
         echo -e "Cloning startup scripts for the lab template."
         WriteLog "Cloning startup scripts for the lab template."
         cp -r $STARTUPSCRIPTSPATH/$1 $STARTUPSCRIPTSPATH/$newbpname
         chmod -R a+rwx $STARTUPSCRIPTSPATH/$newbpname
-        fi
+        #fi
 	echo -e "Successfully cloned $newbpname from $1!"
 	WriteLog "Successfully cloned $newbpname from $1!"
+
+	read -p "Provide IP address of lab development VM (optional - presss Enter to skip):" develIP
+	if [[ -z "$develIP" ]]
+	then
+		echo -e "Skipping edit of webserver url"
+                echo -e "$newbpname is still using production web server, consider editing the lab if required."
+		PauseDisplayBlueprintScreen
+	fi
+
+	if [[ $develIP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
+	then
+		echo -ne "Checking connectivity, please wait . . . "
+		sudo ssh -i $KEYFILEPATH cloud-user@$develIP echo success
+		if [ $? -eq 0 ]
+		then
+			echo -ne "Configuring $newbpname to use $develIP . . . "
+			sed -i "0,/$WEBURL/{s/$WEBURL/$develIP/}" $newbpname/stack_user.yaml
+			if [ $? -eq 0 ]
+			then
+				echo -e "done"
+		                sudo ssh -i $KEYFILEPATH cloud-user@$develIP sudo mkdir $STARTUPSCRIPTSPATH
+		                sudo ssh -i $KEYFILEPATH cloud-user@$develIP sudo chmod 777 $STARTUPSCRIPTSPATH
+		                sudo scp -r -i $KEYFILEPATH $STARTUPSCRIPTSPATH/$newbpname cloud-user@$develIP:$STARTUPSCRIPTSPATH
+			else
+				echo -e "fail"
+				echo -e "$newbpname is still using production web server, consider editing the lab if required."
+			fi
+		else
+			echo -e "fail. Unable to connect to $develIP"
+			echo -e "$newbpname is still using production web server, consider editing the lab if required."
+		fi
+	else
+		echo -e "Invalid IP address, $newbpname is still using production web server, consider editing the lab if required."
+	fi
+
 	PauseDisplayBlueprintScreen
 	fi
 	fi
@@ -1451,7 +1490,21 @@ function LabBlueprintSTARTUP
         if [ -d $choice ]
         then
                 export VALIDDIR="$STARTUPSCRIPTSPATH/$choice"
-		cd $VALIDDIR
+		if [ -d $VALIDDIR ]
+		then
+			cd $VALIDDIR
+		else
+			read -p "Startup directory for $choice does not exist. Would you like to create it? (Y/[N]): " yn
+        		if [[ "$yn" =~ ^(Y|y|Yes|yes|YES)$ ]]
+		        then
+				echo -e "Creating startup directory for $choice "
+				mkdir $VALIDDIR
+				cd $VALIDDIR
+			else	
+				echo -e "Not creating startup directory for $choice "
+				PauseDisplayBlueprintScreen
+			fi	
+		fi
 		export PS1="[NOVELLOSHELL \W]\$ "
 		NOVELLO=yes bash
 		PauseDisplayBlueprintScreen
