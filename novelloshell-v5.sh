@@ -919,39 +919,18 @@ function LaunchLabStack
 	CSVSTR=${USERNAME}
 	CSVSTR=${CSVSTR}${CSVSEP}${1}
 
-	lab=$USERNAME-$TAG-$1
+	uniqid=$(echo $RANDOM | md5sum | head -c 4)
+	lab=$USERNAME-$TAG-$1-$uniqid
 	SetAdminCredentials
-	appendno=0
-	count=1
         if [[ "$ADMINACCESS" != "no" ]]
 	then
-        runninglabs=$(openstack $CLISUFFIX stack list | grep $lab | wc -l)
+        runninglabs=$(openstack $CLISUFFIX stack list | grep $USERNAME | wc -l)
 	else
-        runninglabs=$(exec_admin_stack_script | grep $lab | wc -l)
+        runninglabs=$(exec_admin_stack_script | grep $USERNAME | wc -l)
 	fi
-        if [ $runninglabs -gt 0 ]
-        then
-	        if [[ "$ADMINACCESS" != "no" ]]
-		then
-		runninglabnos=$(openstack $CLISUFFIX stack list -c 'Stack Name' | grep $lab | tr -d '|' | tr -d '[:blank:]' | rev | cut -d '_' -f 1)
-		else
-		runninglabnos=$(exec_admin_stack_script -c "'Stack Name'" | grep $lab | tr -d '|' | tr -d '[:blank:]' | rev | cut -d '_' -f 1)
-		fi
-		while [ $appendno -eq 0 ]
-		do
-			if [[ $runninglabnos == *$count* ]]
-			then
-				count=$(( count + 1 ))
-			else 
-				appendno=$count
-			fi
-		done
-	else
-		appendno=$count
-	fi
-	
-	lab="${lab}_${appendno}"
 
+        if [ $runninglabs -lt $MAXLABS ]
+        then
 	mkdir -p "${APPSDIR}/${lab}"
 	cpsrc="${BPSDIR}/${1}/stack_user.yaml"
 	cpdst="${APPSDIR}/${lab}"
@@ -961,6 +940,7 @@ function LaunchLabStack
 
         if [[ "$ADMINACCESS" == "no" ]]
 	then
+
 	exec_admin_usrrol_script create $lab
 	WriteLog "exec_admin_usrrol_script create $lab"
 	else
@@ -980,6 +960,10 @@ function LaunchLabStack
 	CSVSTR=${CSVSTR}${CSVSEP}${lab}
 	CSVSTR=${CSVSTR}${CSVSEP}$(date +"%a %b %d %T %Y")
 	echo -e $CSVSTR >> $STATSDIR/$REPORTFILE
+
+	else
+	echo -e "You can run maximum of $MAXLABS labs. Delete any of your running labs and try again."
+	fi
 
 	return
 }
@@ -1127,6 +1111,8 @@ if [[ "$ImageName" == *"DELETE"* ]]; then
 	echo -e "Image is already marked for deletion"
 	PauseDisplayImageScreen
 fi
+echo -e "Below labs will be affected with deletion of this image. Make sure to correct these."
+grep -Rl $ImageName $BPSDIR  | awk -F/ '{print $(NF-1)}' | sort | uniq
 echo -e "Marking $ImageName for deletion"
 ImageNameDel=$USERNAME-$ImageName-DELETE-$RANDOM
 echo -ne "Setting $ImageName as $ImageNameDel for deletion..."
