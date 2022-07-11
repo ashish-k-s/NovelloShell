@@ -175,11 +175,14 @@ Lab environment options:
 --------------------------
 new - Launch a new lab from blueprint
 list - List your launched labs
-connect - Connect to the lab environment
-info - Read information about the lab environment template"
-
+connect - Connect to the lab environment"
+if [ $ADMINUSER -eq 0 ]
+then
+echo -e "info - Read the information about the lab environment template"
+fi
 if [ $ADMINUSER -eq 1 ]
 then
+echo -e "INFO - Read or edit the information about the lab environment template"
 echo -e ""
 echo -e "BECOME - Use NovelloShell as other user"
 echo -e ""
@@ -288,6 +291,9 @@ case "$choice" in
 		ListLabs
 		;;
 	'info')
+		LabInfo
+		;;
+	'INFO')
 		LabInfo
 		;;
         'connect')
@@ -1600,10 +1606,23 @@ function LabInfo
         then
 		if [ -f "$choice/README.md" ]
 		then 
+			if [ $ADMINUSER -eq 1 ]
+			then
+			vi $choice/README.md
+			else
 			less $choice/README.md
+			fi
 	                PauseDisplayScreen1
 
 		else
+                        if [ $ADMINUSER -eq 1 ]
+                        then
+	                	read -p "README file does not exist for $choice, would you like to create it? " yn
+	                        if [[ "$yn" =~ ^(Y|y|Yes|yes|YES)$ ]]
+				then
+					vi $choice/README.md
+				fi
+			fi
 	                echo -e "README file does not exist for $choice"
 		fi
                 PauseDisplayScreen1
