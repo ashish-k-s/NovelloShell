@@ -1351,7 +1351,7 @@ function CloneTemplate
 	if [[ $develIP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]
 	then
 		echo -ne "Checking connectivity, please wait . . . "
-		sudo ssh -i $KEYFILEPATH cloud-user@$develIP echo success
+		sudo ssh -o StrictHostKeyChecking=no -i $KEYFILEPATH cloud-user@$develIP echo success 2> /dev/null
 		if [ $? -eq 0 ]
 		then
 			echo -ne "Configuring $newbpname to use $develIP . . . "
@@ -1359,9 +1359,11 @@ function CloneTemplate
 			if [ $? -eq 0 ]
 			then
 				echo -e "done"
-		                sudo ssh -i $KEYFILEPATH cloud-user@$develIP sudo mkdir $STARTUPSCRIPTSPATH
-		                sudo ssh -i $KEYFILEPATH cloud-user@$develIP sudo chmod 777 $STARTUPSCRIPTSPATH
-		                sudo scp -r -i $KEYFILEPATH $STARTUPSCRIPTSPATH/$newbpname cloud-user@$develIP:$STARTUPSCRIPTSPATH
+				echo -ne "Creating required directories and file on $develIP . . . "
+		                sudo ssh -o StrictHostKeyChecking=no -i $KEYFILEPATH cloud-user@$develIP sudo mkdir $STARTUPSCRIPTSPATH 2> /dev/null
+		                sudo ssh -o StrictHostKeyChecking=no -i $KEYFILEPATH cloud-user@$develIP sudo chmod 777 $STARTUPSCRIPTSPATH 2> /dev/null
+		                sudo scp -o StrictHostKeyChecking=no -r -i $KEYFILEPATH $STARTUPSCRIPTSPATH/$newbpname git@$develIP:$STARTUPSCRIPTSPATH 2> /dev/null
+				echo -e "done"
 			else
 				echo -e "fail"
 				echo -e "$newbpname is still using production web server, consider editing the lab if required."
