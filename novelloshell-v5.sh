@@ -628,9 +628,6 @@ function LabEDIT
 function LabSAVE
 {
 	SetAdminCredentials
-        echo -ne "\nGetting list of available images . . . "
-        ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
-        echo -e "done"
 
 	SetUserCredentialsFor $lab
         read -p "Enter new Project name: " NEWLAB
@@ -644,6 +641,10 @@ function LabSAVE
 		PauseDisplayBlueprintScreen
 	fi
 	#mkdir $NEWLAB
+
+        echo -ne "\nGetting list of available images . . . "
+        ImageArrayAvail=($(openstack $CLISUFFIX image list -c Name -f value))
+        echo -e "done"
 
 	echo -e "Stopping all the servers in this lab..."
 	# TODO: Do not stop the server which is already in stopped state
@@ -679,17 +680,22 @@ function LabSAVE
 		newimgname=$(echo "${NEWLAB}-${servername}")
 		echo -e "Processing $servername running from image $curimgname"
 	        
-		##Avoid cloaning common images
+		##Provide option to avoid cloaning common images
 	        if [[ $curimgname =~ "pntaecommon" ]]
         	then 
-	                echo -e "Skipping image $image"
+	                echo -e "\nPress Enter to skip saving common image $image \nType name of the new image if you wish save it."
+	                echo -e "Copy/Paste the suggested name for new image $newimgname \nor type new name or press Enter to skip"
+	                read new_image_name
+			if [[ $new_image_name == '' ]]
+			then
+			echo -e "Skipping $image"
         	        continue
+			fi
 	        fi
 
-		read -p "New image name [$newimgname] (Provide new name or hit Enter to accept current name): " new_img_name
-		if [[ ! -z $new_img_name ]]
+		if [[ ! -z $new_image_name ]]
 		then
-		newimgname=$(echo $new_img_name)
+		newimgname=$(echo $new_image_name)
 		fi
 
 		if [[ $newimgname != *"$TAG"* ]]; then
@@ -709,7 +715,13 @@ function LabSAVE
 
 			openstack $CLISUFFIX server image create --name $newimgname $servername > /dev/null 2>&1
 			echo -e "Replacing $curimgname with $newimgname in $newstackfile"
-			sed -i "s/$curimgname/$newimgname/g" $newstackfile
+
+			cat -n $newstackfile > $newstackfile.num
+			lineno=$(grep name $newstackfile.num | grep $servername | head -1 | awk '{print $1}')
+			lineno=$(tail -n +$lineno $newstackfile.num | grep image  | grep -v '#' | head -1 | awk '{print $1}')
+			cmd="sed -i \""${lineno}"s/"${curimgname}"/"${newimgname}"/\" "${newstackfile}
+			eval $cmd
+
 		fi
 	done
 
@@ -740,10 +752,9 @@ function LabSAVE
 		fi
 	done
 
-	# Print warning due to limitation of processing images if two servers are using same image.
-	echo -e "\nNOTE: If current lab is using same image for multiple servers, corresponding new images are not processed correctly. \n \
-You are required to manually publish a few private images from current lab and also manually change the image name in new blueprint's heat template. \n \
-Do not delete this lab until you verify the new blueprint."
+        echo -e "Current status of $lab is frozen as blueprint with name $NEWLAB. "
+        echo -e "Please launch $NEWLAB and verify that the state of all the VMs is as expected."
+	echo -e "Do not delete this lab until you verify the new blueprint."
 
 	SetUserCredentialsFor $lab
 
