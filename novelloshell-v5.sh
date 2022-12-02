@@ -651,7 +651,7 @@ function LabSAVE
 	# TODO: Check if stopping the server is really needed
 	for i in `openstack $CLISUFFIX server list -c Name -f value`
 	do
-		openstack $CLISUFFIX server stop $i
+		openstack $CLISUFFIX server stop $i > /dev/null 2>&1
 	done
 
 	echo -ne "Waiting for all the server to stop. "
@@ -678,25 +678,20 @@ function LabSAVE
 		servername=$(echo $i | awk '{print $1}')
 		curimgname=$(echo $i | awk '{print $2}')
 		newimgname=$(echo "${NEWLAB}-${servername}")
-		echo -e "Processing $servername running from image $curimgname"
+		echo -e "Processing vm $servername running from image $curimgname"
 	        
 		##Provide option to avoid cloaning common images
 	        if [[ $curimgname =~ "pntaecommon" ]]
         	then 
 	                echo -e "\nPress Enter to skip saving common image $image \nType name of the new image if you wish save it."
 	                echo -e "Copy/Paste the suggested name for new image $newimgname \nor type new name or press Enter to skip"
-	                read new_image_name
-			if [[ $new_image_name == '' ]]
+	                read newimgname
+			if [[ $newimgname == '' ]]
 			then
 			echo -e "Skipping $image"
         	        continue
 			fi
 	        fi
-
-		if [[ ! -z $new_image_name ]]
-		then
-		newimgname=$(echo $new_image_name)
-		fi
 
 		if [[ $newimgname != *"$TAG"* ]]; then
 			newimgname=$newimgname-pntae
@@ -732,7 +727,7 @@ function LabSAVE
 
 	SetAdminCredentials
 
-	for image in $(grep 'image:' $newstackfile)
+	for image in $(grep 'image:' $newstackfile | grep -v '#')
 	do
 		image=$(echo $image | awk -F ':' '{print $2}' | tr -d '[:space:]' | tr -d '"')
 
