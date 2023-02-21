@@ -732,11 +732,12 @@ function LabSAVE
 		image=$(echo $image | awk -F ':' '{print $2}' | tr -d '[:space:]' | tr -d '"')
 
                 ##Avoid common images
-                if [[ $image =~ "pntaecommon" ]]
-                then
-                        echo -e "Skipping image $image"
-                        continue
-                fi
+                #if [[ $image =~ "pntaecommon" ]]
+                #then
+                #        echo -e "Skipping image $image"
+                #        continue
+                #fi
+		# new image with pntaecommon tag is getting skipped from publishing. Hence commenting above code
 
 		echo -e "\nSetting $image as public image"
 		if [ $ADMINACCESS == "no" ]
