@@ -42,6 +42,7 @@ ADMIN_PUBLISH_IMAGE_SCRIPT=$(grep ADMIN_PUBLISH_IMAGE_SCRIPT= $CONFIGFILE  | gre
 CLISUFFIX=$(grep CLISUFFIX= $CONFIGFILE  | grep -v ^#)
 CLUSTERNAME=$(grep CLUSTERNAME= $CONFIGFILE  | grep -v ^#)
 PROJECTID=$(grep PROJECTID= $CONFIGFILE  | grep -v ^#)
+LABNAMESTR=$(grep LABNAMESTR= $CONFIGFILE  | grep -v ^#)
 MAXLABS=$(grep MAXLABS= $CONFIGFILE  | grep -v ^#)
 LOGFILE=$(grep LOGFILE= $CONFIGFILE  | grep -v ^#)
 STATSDIR=$(grep STATSDIR= $CONFIGFILE  | grep -v ^#)
@@ -63,6 +64,7 @@ typeset -l ADMINACCESS
 eval $ADMINACCESS
 eval $DOMAIN
 eval $PROJECTID
+eval $LABNAMESTR
 eval $CLUSTERNAME
 eval $MAXLABS
 eval $LOGFILE
@@ -1329,7 +1331,9 @@ function CloneTemplate
 	chmod -R a+rwx $newbpname
 	if [ $? -eq 0 ]
 	then
-	sed -i "s|$1|$newbpname|g" $newbpname/stack_user.yaml
+	### sample: awk -v s1="string1" -v s2="string2" -v s3="string3" -i inplace '{if (!p && $0 ~ s1) p=1} p && !c && $0 ~ s2{sub(s2, s3); c=1} 1' input_file
+	awk -v s1=$LABNAMESTR -v s2=$1 -v s3=$newbpname -i inplace '{if (!p && $0 ~ s1) p=1} p && !c && $0 ~ s2{sub(s2, s3); c=1} 1' $newbpname/stack_user.yaml
+	#sed -i "s|$1|$newbpname|g" $newbpname/stack_user.yaml
 	if [ $? -eq 0 ]
 	then
 	chmod -R a+rw $newbpname/stack_user.yaml
